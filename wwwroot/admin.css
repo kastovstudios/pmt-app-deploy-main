@@ -1,7 +1,7 @@
 body{
     margin:0;
     font-family:Arial;
-    background:#353535;
+    background:#0f172a;
     color:white;
 }
 
@@ -55,7 +55,7 @@ body{
 
 .sidebar{
     width:220px;
-    background:#353535;
+    background:#1e293b;
     padding:20px;
     box-sizing:border-box;
 }
@@ -69,7 +69,7 @@ body{
     padding:12px;
     margin-bottom:10px;
 
-    background:#353535;
+    background:#334155;
     border:none;
     color:white;
 
@@ -78,7 +78,7 @@ body{
 }
 
 .sidebar button:hover{
-    background:#353535;
+    background:#475569;
 }
 
 /* =========================
@@ -97,7 +97,7 @@ body{
 ========================= */
 
 .card{
-    background:#353535;
+    background:#1e293b;
     padding:20px;
     border-radius:10px;
 
@@ -129,7 +129,7 @@ select{
     padding:12px;
     margin-bottom:10px;
 
-    background:#353535;
+    background:#334155;
     border:none;
     color:white;
 
@@ -154,7 +154,7 @@ button{
 }
 
 .item{
-    background:#353535;
+    background:#1e293b;
 
     padding:12px;
     margin-bottom:10px;
@@ -180,7 +180,7 @@ button{
     width:100%;
     max-width:700px;
 
-    background:#353535;
+    background:#1e293b;
 
     border-radius:8px;
     overflow:hidden;
@@ -192,7 +192,7 @@ button{
 
     padding:12px;
 
-    background:#353535;
+    background:#334155;
     font-weight:bold;
 }
 
@@ -207,11 +207,11 @@ button{
 
     padding:12px;
 
-    border-top:1px solid #353535;
+    border-top:1px solid #334155;
 }
 
 .grid-row:hover{
-    background:#555a61;
+    background:#475569;
 }
 
 .grid-header span,
@@ -230,24 +230,24 @@ button{
 }
 
 .resultados-clientes{
-    background:#353535;
+    background:#1e293b;
     border-radius:8px;
     margin-top:5px;
 
     max-height:250px;
     overflow-y:auto;
 
-    border:1px solid #353535;
+    border:1px solid #334155;
 }
 
 .resultado-item{
     padding:10px;
     cursor:pointer;
-    border-bottom:1px solid #353535;
+    border-bottom:1px solid #334155;
 }
 
 .resultado-item:hover{
-    background:#353535;
+    background:#334155;
 }
 
 /* =========================
