@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comprovante</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+body{
+    background:#0f172a;
+    color:white;
+    font-family:Arial;
+    margin:0;
+}
+
+.container{
+    max-width:600px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:#1e293b;
+    padding:20px;
+    border-radius:10px;
+}
+
+.item{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid #334155;
+}
+
+.total{
+    margin-top:20px;
+    text-align:right;
+    font-size:22px;
+    font-weight:bold;
+    color:#4ade80;
+}
+
+.info{
+    color:#94a3b8;
+    margin-bottom:20px;
+}
+
+.codigo{
+    margin-top:15px;
+    color:#94a3b8;
+    font-size:13px;
+}
+
+button{
+    margin-top:20px;
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    font-size:16px;
+}
+
+    .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    
+
+    margin-bottom:5px;
+}
+
+.topbar button{
+
+    width:auto;
+
+    padding:10px 18px;
+
+    background:#334155;
+
+    border:none;
+
+    border-radius:8px;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:20px;
+}
+
+.topbar button:hover{
+    background:#475569;
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="topbar">
+        <button onclick="home()">Home</button>
+        <button onclick="produtos()">Produtos</button>
+        <button onclick="historico()">Histórico</button>
+    </div>
+    
+    <div class="card">
+
+        <h2>Comprovante de Compra</h2>
+
+        <div class="info">
+            <div id="nome"></div>
+            <div id="data"></div>
+        </div>
+
+        <div id="itens"></div>
+
+        <div id="total" class="total"></div>
+
+        <div id="codigo" class="codigo"></div>
+
+        <button onclick="window.print()">
+            Imprimir / Salvar PDF
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+const API = window.location.origin;
+
+async function home(){
+    window.location.href = "home.html";
+}
+async function produtos(){
+    window.location.href = "produtos.html"  
+}
+async function historico(){
+    window.location.href = "historico.html"
+}
+    
+async function carregar(){
+
+    const token = localStorage.getItem("token");
+
+    const params = new URLSearchParams(window.location.search);
+
+    const id = params.get("id");
+
+    const res = await fetch(`${API}/comprovante/${id}`,
+    {
+        headers:{
+            Authorization: token
+        }
+    });
+
+    const data = await res.json();
+
+    document.getElementById("nome").innerText =
+        "Cliente: " + data.nome;
+
+    document.getElementById("data").innerText =
+        "Data: " + data.data;
+
+    const itens = document.getElementById("itens");
+
+    data.itens.forEach(i => {
+
+        itens.innerHTML += `
+            <div class="item">
+                <span>${i.qtd}x ${i.produto}</span>
+                <span>R$ ${(i.preco * i.qtd).toFixed(2)}</span>
+            </div>
+        `;
+    });
+
+    document.getElementById("total").innerText =
+        "TOTAL: R$ " + data.total.toFixed(2);
+
+    document.getElementById("codigo").innerText =
+        "Código da compra: #" + data.id;
+}
+
+carregar();
+</script>
+
+</body>
+</html>

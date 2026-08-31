@@ -1,0 +1,320 @@
+body{
+    margin:0;
+    font-family:Arial;
+    background:#0f172a;
+    color:white;
+}
+
+.container{
+    display:flex;
+    height:100vh;
+}
+
+
+.loading-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.85);
+    z-index:9999;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
+    color:white;
+    font-size:24px;
+}
+
+
+.spinner{
+    width:90px;
+    height:90px;
+    border:12px solid #555;
+    border-top:12px solid white;
+    border-radius:50%;
+    animation:girar 1s linear infinite;
+    margin-bottom:25px;
+}
+
+@keyframes girar{
+    from{ transform:rotate(0deg); }
+    to{ transform:rotate(360deg); }
+}
+
+.loading-texto{
+    text-align:center;
+}
+
+
+
+
+/* =========================
+    SIDEBAR
+========================= */
+
+.sidebar{
+    width:220px;
+    background:#1e293b;
+    padding:20px;
+    box-sizing:border-box;
+}
+
+.sidebar h3{
+    margin-top:0;
+}
+
+.sidebar button{
+    width:100%;
+    padding:12px;
+    margin-bottom:10px;
+
+    background:#334155;
+    border:none;
+    color:white;
+
+    cursor:pointer;
+    border-radius:6px;
+}
+
+.sidebar button:hover{
+    background:#475569;
+}
+
+/* =========================
+    CONTEUDO
+========================= */
+
+.content{
+    flex:1;
+    padding:20px;
+    overflow-y:auto;
+    box-sizing:border-box;
+}
+
+/* =========================
+    CARDS DASHBOARD
+========================= */
+
+.card{
+    background:#1e293b;
+    padding:20px;
+    border-radius:10px;
+
+    width:220px;
+    display:inline-block;
+
+    margin-right:15px;
+    margin-bottom:15px;
+}
+
+/* =========================
+    INPUTS
+========================= */
+
+input,
+select{
+    width:100%;
+    padding:10px;
+    margin-bottom:10px;
+
+    border:none;
+    border-radius:6px;
+
+    box-sizing:border-box;
+}
+
+#cobrar{
+    width:100%;
+    padding:12px;
+    margin-bottom:10px;
+
+    background:#334155;
+    border:none;
+    color:white;
+
+    cursor:pointer;
+    border-radius:6px;
+}
+
+button{
+    padding:10px 15px;
+    border:none;
+    border-radius:6px;
+
+    cursor:pointer;
+}
+
+/* =========================
+    HISTORICO
+========================= */
+
+.list{
+    margin-top:20px;
+}
+
+.item{
+    background:#1e293b;
+
+    padding:12px;
+    margin-bottom:10px;
+
+    border-radius:8px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.admin{
+    color:#888;
+    font-size:12px;
+    font-style:italic;
+}
+
+/* =========================
+    GRID PRODUTOS
+========================= */
+
+.grid-container{
+    width:100%;
+    max-width:700px;
+
+    background:#1e293b;
+
+    border-radius:8px;
+    overflow:hidden;
+}
+
+.grid-header{
+    display:flex;
+    justify-content:space-between;
+
+    padding:12px;
+
+    background:#334155;
+    font-weight:bold;
+}
+
+.grid-body{
+    max-height:400px;
+    overflow-y:auto;
+}
+
+.grid-row{
+    display:flex;
+    justify-content:space-between;
+
+    padding:12px;
+
+    border-top:1px solid #334155;
+}
+
+.grid-row:hover{
+    background:#475569;
+}
+
+.grid-header span,
+.grid-row span{
+    width:50%;
+}
+
+/* =========================
+    PESQUISA
+========================= */
+
+.pesquisa-container{
+    position:relative;
+    width:100%;
+    max-width:400px;
+}
+
+.resultados-clientes{
+    background:#1e293b;
+    border-radius:8px;
+    margin-top:5px;
+
+    max-height:250px;
+    overflow-y:auto;
+
+    border:1px solid #334155;
+}
+
+.resultado-item{
+    padding:10px;
+    cursor:pointer;
+    border-bottom:1px solid #334155;
+}
+
+.resultado-item:hover{
+    background:#334155;
+}
+
+/* =========================
+    GRID ADICIONAR COMPRA
+========================= */
+
+.grid-3{
+    display:grid;
+    grid-template-columns: 70px 1fr 80px;
+    align-items:center;
+}
+
+.qtd-input{
+    width:60px;
+    padding:5px;
+}
+
+.checkbox-produto{
+    transform:scale(1.2);
+}
+
+/* =========================
+    RESPONSIVO
+========================= */
+
+@media (max-width: 768px){
+
+    .container{
+        display:block;
+        height:auto;
+    }
+
+    .sidebar{
+        width:100%;
+
+        display:grid;
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+        gap:8px;
+
+        padding:10px;
+
+        box-sizing:border-box;
+    }
+
+    .sidebar h3{
+        display:none;
+    }
+
+    .sidebar button{
+        width:100%;
+        margin:0;
+        padding:12px;
+        font-size:13px;
+    }
+
+    .content{
+        width:100%;
+        padding:10px;
+        box-sizing:border-box;
+    }
+
+    .card{
+        width:100%;
+        margin:0 0 10px 0;
+        box-sizing:border-box;
+    }
+}

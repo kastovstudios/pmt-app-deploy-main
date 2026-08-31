@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="admin.css">
+<title>Admin</title>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+        <h3>Admin</h3>
+
+        <button onclick="mostrar('dashboard')">Dashboard</button>
+        <button onclick="mostrar('clientes')">Clientes</button>
+        <button onclick="mostrar('produtos')">Produtos</button>
+        <button onclick="mostrar('adicionar')">Adicionar Compra</button>
+        <button onclick="mostrar('relatorios')">Relatórios</button>
+        <button onclick="mostrar('configuracoes')">Configurações</button>
+        <button onclick="home()">Home</button>
+    </div>
+
+    <div class="content">
+
+        <div id="dashboard">
+            <h2>Dashboard</h2>
+
+            <select id="periodoDashboard" onchange="carregarDashboard()"></select>
+
+            <div class="card">
+                <h3>Total Dívida</h3>
+                <p id="totalDivida">R$ 0</p>
+            </div>
+
+            <div class="card">
+                <h3>Clientes Devendo</h3>
+                <p id="clientesDevendo">0</p>
+            </div>
+
+            <button onclick="fecharMes()">Fechar Mês</button>
+            <button onclick="cobrarClientes()">Cobrar Clientes</button>
+            <button onclick="baixarMensagensCobranca()">Baixar Mensagens TXT</button>
+        </div>
+
+        <div id="clientes" style="display:none;">
+            <h2>Clientes</h2>
+
+            <select id="periodoHistoricoAdmin"></select>
+
+            <select id="filtroPostoHistorico" onchange="filtrarClientesHistorico()">
+                <option value="">Todos</option>
+                <option value="Sd Ev">Sd Ev</option>
+                <option value="Sd">Sd</option>
+                <option value="Cb">Cb</option>
+                <option value="Al CFST">Al CFST</option>
+                <option value="3º Sgt">3º Sgt</option>
+                <option value="2º Sgt">2º Sgt</option>
+                <option value="1º Sgt">1º Sgt</option>
+                <option value="Sub Ten">Sub Ten</option>
+                <option value="Asp">Asp</option>
+                <option value="2º Ten">2º Ten</option>
+                <option value="1º Ten">1º Ten</option>
+                <option value="Cap">Cap</option>
+                <option value="Maj">Maj</option>
+                <option value="TC">TC</option>
+                <option value="Cel">Cel</option>
+            </select>
+
+            <div class="pesquisa-container">
+                <input type="text" id="pesquisaClienteHistorico" placeholder="Pesquisar cliente..." onkeyup="filtrarClientesHistorico()">
+                <div id="resultadosClientesHistorico" class="resultados-clientes"></div>
+            </div>
+
+            <button onclick="carregarHistorico()">Pesquisar Histórico</button>
+
+            <button
+                id="btnCobrarCliente"
+                onclick="cobrarClienteSelecionado()"
+                style="display:none;">
+                Cobrar Cliente
+            </button>
+
+            <div id="historico" class="list"></div>
+            <div id="totalClienteAdmin" class="historico-total">
+                TOTAL: R$ 0,00
+            </div>
+            <button onclick="zerar()">Zerar Dívida</button>
+        </div>
+
+        <div id="produtos" style="display:none;">
+            <h2>Produtos</h2>
+
+            <input id="nomeProduto" placeholder="Nome">
+            <input id="precoProduto" placeholder="Preço">
+
+            <button onclick="addProduto()">Adicionar Produto</button>
+
+            <br><br>
+
+            <div class="grid-container">
+                <div class="grid-header">
+                    <span>Produto</span>
+                    <span>Preço</span>
+                </div>
+
+                <div id="listaProdutos" class="grid-body"></div>
+            </div>
+        </div>
+
+        <div id="adicionar" style="display:none;">
+            <h2>Adicionar Compra</h2>
+
+            <select id="periodoAdicionar"></select>
+
+            <div class="pesquisa-container">
+                <select id="filtroPosto" onchange="filtrarClientes()">
+                    <option value="">Todos</option>
+                    <option value="Sd Ev">Sd Ev</option>
+                    <option value="Sd">Sd</option>
+                    <option value="Cb">Cb</option>
+                    <option value="Al CFST">Al CFST</option>
+                    <option value="3º Sgt">3º Sgt</option>
+                    <option value="2º Sgt">2º Sgt</option>
+                    <option value="1º Sgt">1º Sgt</option>
+                    <option value="Sub Ten">Sub Ten</option>
+                    <option value="Asp">Asp</option>
+                    <option value="2º Ten">2º Ten</option>
+                    <option value="1º Ten">1º Ten</option>
+                    <option value="Cap">Cap</option>
+                    <option value="Maj">Maj</option>
+                    <option value="TC">TC</option>
+                    <option value="Cel">Cel</option>
+                </select>
+
+                <input type="text" id="pesquisaCliente" placeholder="Pesquisar cliente..." onkeyup="filtrarClientes()">
+
+                <div id="resultadosClientes" class="resultados-clientes"></div>
+            </div>
+
+            <div class="grid-container">
+                <div class="grid-header">
+                    <span>Selecionar</span>
+                    <span>Produto</span>
+                    <span>Qtd</span>
+                </div>
+
+                <div id="listaAdicionarCompra" class="grid-body"></div>
+            </div>
+
+            <br>
+
+            <button onclick="adicionarCompra()">Registrar Compras</button>
+        </div>
+
+        <div id="relatorios" style="display:none;">
+
+            <h2>Relatórios</h2>
+
+            <select id="periodoRelatorio" onchange="carregarRelatorioProduto()"></select>
+
+            <select id="produtoRelatorio" onchange="carregarRelatorioProduto()"></select>
+
+            <div class="card">
+                <h3>Quantidade vendida</h3>
+                <p id="qtdVendidaProduto">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Total vendido</h3>
+                <p id="totalVendidoProduto">R$ 0,00</p>
+            </div>
+
+        </div>
+
+        <div id="configuracoes" style="display:none;">
+
+            <h2>Configurações</h2>
+
+            <h3>Alterar dados do usuário</h3>
+
+            <select id="filtroPostoConfig" onchange="filtrarClientesConfig()">
+                <option value="">Todos</option>
+                <option value="Sd Ev">Sd Ev</option>
+                <option value="Sd">Sd</option>
+                <option value="Cb">Cb</option>
+                <option value="3º Sgt">3º Sgt</option>
+                <option value="2º Sgt">2º Sgt</option>
+                <option value="1º Sgt">1º Sgt</option>
+                <option value="Sub Ten">Sub Ten</option>
+                <option value="Asp">Asp</option>
+                <option value="2º Ten">2º Ten</option>
+                <option value="1º Ten">1º Ten</option>
+                <option value="Cap">Cap</option>
+                <option value="Maj">Maj</option>
+                <option value="TC">TC</option>
+                <option value="Cel">Cel</option>
+            </select>
+
+            <div class="pesquisa-container">
+                <input type="text" id="pesquisaClienteConfig" placeholder="Pesquisar cliente..." onkeyup="filtrarClientesConfig()">
+                <div id="resultadosClientesConfig" class="resultados-clientes"></div>
+            </div>
+
+            <br>
+
+            <div id="formConfigUsuario" style="display:none;">
+
+                <input id="configNome" placeholder="Nome de guerra">
+
+                <select id="configPosto">
+                    <option value="Sd Ev">Sd Ev</option>
+                    <option value="Sd">Sd</option>
+                    <option value="Cb">Cb</option>
+                    <option value="Al CFST">Al CFST</option>
+                    <option value="3º Sgt">3º Sgt</option>
+                    <option value="2º Sgt">2º Sgt</option>
+                    <option value="1º Sgt">1º Sgt</option>
+                    <option value="Sub Ten">Sub Ten</option>
+                    <option value="Asp">Asp</option>
+                    <option value="2º Ten">2º Ten</option>
+                    <option value="1º Ten">1º Ten</option>
+                    <option value="Cap">Cap</option>
+                    <option value="Maj">Maj</option>
+                    <option value="TC">TC</option>
+                    <option value="Cel">Cel</option>
+                </select>
+
+                <input id="configTelefone" placeholder="Telefone">
+
+                <button onclick="salvarConfiguracaoUsuario()">
+                    Salvar Alterações
+                </button>
+                <button onclick="excluirUsuarioSelecionado()" style="background:#b91c1c;">
+                    Excluir Usuário
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <div id="loadingTexto" class="loading-texto">
+        Enviando mensagens...
+    </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+let clientesCache = [];
+let clienteSelecionado = null;
+let clienteHistoricoSelecionado = null;
+let clienteConfigSelecionado = null;
+let userId = null;
+
+async function home(){
+    window.location.replace("home.html");
+}
+    
+async function verificarAdmin(){
+    const token = localStorage.getItem("token");
+
+    if(!token){
+        window.location.href = "login.html";
+        return;
+    }
+
+    try{
+        const res = await fetch("/me", {
+            headers: { Authorization: token }
+        });
+
+        if(!res.ok){
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+            return;
+        }
+
+        const data = await res.json();
+
+        if(!data.admin){
+            alert("Acesso negado");
+            window.location.href = "home.html";
+            return;
+        }
+    }
+    catch{
+        window.location.href = "login.html";
+    }
+}
+
+async function carregarPeriodos(){
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("/admin/periodos", {
+        headers: { Authorization: token }
+    });
+
+    if(!res.ok){
+        alert("Erro ao carregar meses");
+        return;
+    }
+
+    const data = await res.json();
+
+    const selects = [
+        "periodoDashboard",
+        "periodoHistoricoAdmin",
+        "periodoAdicionar",
+        "periodoRelatorio"
+    ];
+
+    selects.forEach(id => {
+        const select = document.getElementById(id);
+
+        if(!select) return;
+
+        select.innerHTML = "";
+
+        data.forEach(p => {
+            select.innerHTML += `
+                <option value="${p.id}">
+                    ${p.nome} ${p.fechado ? "(fechado)" : "(atual)"}
+                </option>
+            `;
+        });
+    });
+}
+
+function mostrar(tela){
+    const telas = [
+        "dashboard",
+        "clientes",
+        "produtos",
+        "adicionar",
+        "relatorios",
+        "configuracoes"
+    ];
+
+    telas.forEach(id => {
+        const elemento = document.getElementById(id);
+
+        if(elemento){
+            elemento.style.display = "none";
+        }
+    });
+
+    document.getElementById(tela).style.display = "block";
+
+    if(tela === "dashboard") carregarDashboard();
+    if(tela === "clientes") carregarClientes();
+    if(tela === "produtos") carregarProdutos();
+    if(tela === "adicionar"){
+        carregarClientesCompra();
+        carregarProdutosCompra();
+    }
+    if(tela === "relatorios") carregarProdutosRelatorio();
+    if(tela === "configuracoes") carregarConfiguracoes();
+}
+
+async function carregarDashboard(){
+    const token = localStorage.getItem("token");
+    const periodoId = document.getElementById("periodoDashboard").value;
+
+    if(!periodoId) return;
+
+    const res = await fetch(`${API}/admin/dashboard/${periodoId}`, {
+        headers: { Authorization: token }
+    });
+
+    const data = await res.json();
+
+    document.getElementById("clientesDevendo").innerText = data.clientesDevendo;
+    document.getElementById("totalDivida").innerText = "R$ " + data.total.toFixed(2);
+}
+
+async function fecharMes(){
+    if(!confirm("Deseja realmente fechar o mês atual?")){
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("/admin/fechar-mes", {
+        method: "POST",
+        headers: { Authorization: token }
+    });
+
+    alert(await res.text());
+
+    await carregarPeriodos();
+    await carregarDashboard();
+}
+
+async function cobrarClientes(){
+
+    if(!confirm("Enviar cobrança para os clientes do mês selecionado?")){
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+    const periodoId = document.getElementById("periodoDashboard").value;
+
+    const overlay = document.getElementById("loadingOverlay");
+    const texto = document.getElementById("loadingTexto");
+
+    overlay.style.display = "flex";
+
+    try{
+        const res = await fetch(`${API}/admin/clientes-devendo/${periodoId}`, {
+            headers:{ Authorization: token }
+        });
+
+        const clientes = await res.json();
+
+        if(clientes.length === 0){
+            overlay.style.display = "none";
+            alert("Nenhum cliente com dívida neste mês.");
+            return;
+        }
+
+        for(let i = 0; i < clientes.length; i++){
+
+            texto.innerText =
+                `Enviando mensagens... (${i + 1}/${clientes.length})`;
+
+            await fetch(`${API}/admin/cobrar-cliente`, {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json",
+                    Authorization: token
+                },
+                body: JSON.stringify({
+                    usuarioId: clientes[i].id,
+                    periodoId: parseInt(periodoId)
+                })
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 8000));
+        }
+
+        overlay.style.display = "none";
+        alert("Cobranças enviadas com sucesso!");
+    }
+    catch{
+        overlay.style.display = "none";
+        alert("Erro ao enviar cobranças.");
+    }
+}
+
+async function carregarClientes(){
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API}/admin/clientes`, {
+        headers: { Authorization: token }
+    });
+
+    clientesCache = await res.json();
+}
+
+function filtrarClientesHistorico(){
+    const texto = document.getElementById("pesquisaClienteHistorico")
+        .value
+        .toLowerCase()
+        .trim();
+
+    const postoSelecionado = document.getElementById("filtroPostoHistorico").value;
+    const resultados = document.getElementById("resultadosClientesHistorico");
+
+    resultados.innerHTML = "";
+    clienteHistoricoSelecionado = null;
+
+    if(texto.length === 0) return;
+
+    const filtrados = clientesCache.filter(c => {
+        const nomeCombina = c.nome.toLowerCase().includes(texto);
+        const postoCliente = c.posto || "";
+        const postoCombina = postoSelecionado === "" || postoCliente === postoSelecionado;
+
+        return nomeCombina && postoCombina;
+    });
+
+    if(filtrados.length === 0){
+        resultados.innerHTML = `<div class="resultado-item">Nenhum cliente encontrado</div>`;
+        return;
+    }
+
+    filtrados.forEach(c => {
+        const nomeCompleto = `${c.posto || ""} ${c.nome}`;
+
+        resultados.innerHTML += `
+            <div class="resultado-item"
+                onclick="selecionarClienteHistorico(${c.id}, '${nomeCompleto.replace(/'/g, "\\'")}')">
+                ${nomeCompleto}
+            </div>
+        `;
+    });
+}
+
+function selecionarClienteHistorico(id, nome){
+    clienteHistoricoSelecionado = id;
+
+    document.getElementById("pesquisaClienteHistorico").value = nome;
+
+    document.getElementById("resultadosClientesHistorico").innerHTML = "";
+
+    document.getElementById("btnCobrarCliente").style.display = "inline-block";
+
+    document.getElementById("btnCobrarCliente").innerText =
+        `Cobrar ${nome}`;
+}
+
+async function carregarHistorico(){
+    const token = localStorage.getItem("token");
+
+    userId = clienteHistoricoSelecionado;
+
+    if(!userId){
+        alert("Selecione um cliente");
+        return;
+    }
+
+    const periodoId = document.getElementById("periodoHistoricoAdmin").value;
+
+    if(!periodoId){
+        alert("Selecione um mês");
+        return;
+    }
+
+    const res = await fetch(`${API}/admin/historico/${userId}/${periodoId}`, {
+        headers: { Authorization: token }
+    });
+
+    const data = await res.json();
+    const lista = document.getElementById("historico");
+
+    lista.innerHTML = "";
+
+    data.itens.forEach(item => {
+        lista.innerHTML += `
+            <div class="item">
+                <div>
+                    <div>
+                        ${item.qtd}x ${item.produto} - R$ ${item.total.toFixed(2)}
+                    </div>
+        
+                    <div class="admin">
+                        ${item.data}
+                        ${item.admin ? ` - adicionado por admin (${item.admin})` : ""}
+                    </div>
+                </div>
+        
+                <button onclick="remover(${item.id})">X</button>
+            </div>
+        `;
+        
+    
+    });
+    document.getElementById("totalClienteAdmin").innerText =
+    "TOTAL: R$ " + data.total.toFixed(2);
+}
+
+async function remover(id){
+    const token = localStorage.getItem("token");
+
+    await fetch(`${API}/admin/remover/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: token }
+    });
+
+    carregarHistorico();
+}
+
+async function zerar(){
+    if(!confirm("Tem certeza?")) return;
+
+    const token = localStorage.getItem("token");
+    const periodoId = document.getElementById("periodoHistoricoAdmin").value;
+
+    if(!userId){
+        alert("Selecione um cliente");
+        return;
+    }
+
+    if(!periodoId){
+        alert("Selecione um mês");
+        return;
+    }
+
+    await fetch(`${API}/admin/zerar/${userId}/${periodoId}`, {
+        method: "DELETE",
+        headers: { Authorization: token }
+    });
+
+    carregarHistorico();
+}
+
+async function carregarProdutos(){
+    const res = await fetch(`${API}/produtos`);
+    const data = await res.json();
+
+    const lista = document.getElementById("listaProdutos");
+    lista.innerHTML = "";
+
+    data.forEach(p => {
+        lista.innerHTML += `
+            <div class="grid-row">
+                <span>${p.nome}</span>
+                <span>R$ ${p.preco}</span>
+            </div>
+        `;
+    });
+}
+
+async function addProduto(){
+    const token = localStorage.getItem("token");
+
+    const nome = document.getElementById("nomeProduto").value;
+    const preco = parseFloat(document.getElementById("precoProduto").value);
+
+    await fetch(`${API}/admin/produto`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: token
+        },
+        body: JSON.stringify({
+            nome,
+            preco
+        })
+    });
+
+    document.getElementById("nomeProduto").value = "";
+    document.getElementById("precoProduto").value = "";
+
+    carregarProdutos();
+}
+
+async function carregarClientesCompra(){
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API}/admin/clientes`, {
+        headers: { Authorization: token }
+    });
+
+    clientesCache = await res.json();
+}
+
+function filtrarClientes(){
+    const texto = document.getElementById("pesquisaCliente")
+        .value
+        .toLowerCase()
+        .trim();
+
+    const postoSelecionado = document.getElementById("filtroPosto").value;
+    const resultados = document.getElementById("resultadosClientes");
+
+    resultados.innerHTML = "";
+    clienteSelecionado = null;
+
+    if(texto.length === 0) return;
+
+    const filtrados = clientesCache.filter(c => {
+        const nomeCombina = c.nome.toLowerCase().includes(texto);
+        const postoCliente = c.posto || "";
+        const postoCombina = postoSelecionado === "" || postoCliente === postoSelecionado;
+
+        return nomeCombina && postoCombina;
+    });
+
+    if(filtrados.length === 0){
+        resultados.innerHTML = `<div class="resultado-item">Nenhum cliente encontrado</div>`;
+        return;
+    }
+
+    filtrados.forEach(c => {
+        const nomeCompleto = `${c.posto || ""} ${c.nome}`;
+
+        resultados.innerHTML += `
+            <div class="resultado-item"
+                onclick="selecionarCliente(${c.id}, '${nomeCompleto.replace(/'/g, "\\'")}')">
+                ${nomeCompleto}
+            </div>
+        `;
+    });
+}
+
+function selecionarCliente(id, nome){
+    clienteSelecionado = id;
+
+    document.getElementById("pesquisaCliente").value = nome;
+    document.getElementById("resultadosClientes").innerHTML = "";
+}
+
+async function carregarProdutosCompra(){
+    const res = await fetch(`${API}/produtos`);
+    const data = await res.json();
+
+    const lista = document.getElementById("listaAdicionarCompra");
+    lista.innerHTML = "";
+
+    data.forEach(p => {
+        lista.innerHTML += `
+            <div class="grid-row grid-3">
+                <span>
+                    <input type="checkbox" class="checkbox-produto" data-id="${p.id}">
+                </span>
+
+                <span>${p.nome}</span>
+
+                <span>
+                    <input type="number" value="1" min="1" class="qtd-input" id="qtd-${p.id}">
+                </span>
+            </div>
+        `;
+    });
+}
+
+async function adicionarCompra(){
+    const token = localStorage.getItem("token");
+    const usuarioId = clienteSelecionado;
+
+    if(!usuarioId){
+        alert("Selecione um cliente");
+        return;
+    }
+
+    const periodoId = parseInt(document.getElementById("periodoAdicionar").value);
+
+    if(!periodoId){
+        alert("Selecione um mês");
+        return;
+    }
+
+    const checks = document.querySelectorAll(".checkbox-produto");
+    let compras = [];
+
+    checks.forEach(c => {
+        if(c.checked){
+            const produtoId = parseInt(c.dataset.id);
+            const quantidade = parseInt(document.getElementById(`qtd-${produtoId}`).value);
+
+            if(quantidade > 0){
+                compras.push({
+                    usuarioId,
+                    produtoId,
+                    quantidade,
+                    periodoId
+                });
+            }
+        }
+    });
+
+    if(compras.length === 0){
+        alert("Selecione pelo menos 1 produto");
+        return;
+    }
+
+    for(const compra of compras){
+        await fetch(`${API}/admin/adicionar`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: token
+            },
+            body: JSON.stringify(compra)
+        });
+    }
+
+    alert("Compras adicionadas");
+
+    clienteSelecionado = null;
+
+    document.getElementById("pesquisaCliente").value = "";
+    document.getElementById("resultadosClientes").innerHTML = "";
+
+    document.querySelectorAll(".checkbox-produto").forEach(c => c.checked = false);
+    document.querySelectorAll(".qtd-input").forEach(q => q.value = 1);
+}
+
+async function carregarProdutosRelatorio(){
+    const res = await fetch(`${API}/produtos`);
+    const data = await res.json();
+
+    const select = document.getElementById("produtoRelatorio");
+    select.innerHTML = "";
+
+    data.forEach(p => {
+        select.innerHTML += `
+            <option value="${p.id}">
+                ${p.nome}
+            </option>
+        `;
+    });
+
+    carregarRelatorioProduto();
+}
+
+async function carregarRelatorioProduto(){
+    const token = localStorage.getItem("token");
+
+    const produtoId = document.getElementById("produtoRelatorio").value;
+    const periodoId = document.getElementById("periodoRelatorio").value;
+
+    if(!produtoId || !periodoId) return;
+
+    const res = await fetch(
+        `${API}/admin/relatorio/produto/${produtoId}/${periodoId}`,
+        {
+            headers:{
+                Authorization: token
+            }
+        }
+    );
+
+    if(!res.ok){
+        alert("Erro ao carregar relatório");
+        return;
+    }
+
+    const data = await res.json();
+
+    document.getElementById("qtdVendidaProduto").innerText = data.quantidade;
+    document.getElementById("totalVendidoProduto").innerText = "R$ " + data.total.toFixed(2);
+}
+
+async function carregarConfiguracoes(){
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API}/admin/clientes`, {
+        headers: { Authorization: token }
+    });
+
+    clientesCache = await res.json();
+
+    clienteConfigSelecionado = null;
+
+    document.getElementById("pesquisaClienteConfig").value = "";
+    document.getElementById("resultadosClientesConfig").innerHTML = "";
+    document.getElementById("formConfigUsuario").style.display = "none";
+}
+
+function filtrarClientesConfig(){
+    const texto = document.getElementById("pesquisaClienteConfig")
+        .value
+        .toLowerCase()
+        .trim();
+
+    const postoSelecionado = document.getElementById("filtroPostoConfig").value;
+    const resultados = document.getElementById("resultadosClientesConfig");
+
+    resultados.innerHTML = "";
+    clienteConfigSelecionado = null;
+
+    document.getElementById("formConfigUsuario").style.display = "none";
+
+    if(texto.length === 0) return;
+
+    const filtrados = clientesCache.filter(c => {
+        const nomeCombina = c.nome.toLowerCase().includes(texto);
+        const postoCliente = c.posto || "";
+        const postoCombina = postoSelecionado === "" || postoCliente === postoSelecionado;
+
+        return nomeCombina && postoCombina;
+    });
+
+    if(filtrados.length === 0){
+        resultados.innerHTML = `<div class="resultado-item">Nenhum cliente encontrado</div>`;
+        return;
+    }
+
+    filtrados.forEach(c => {
+        const nomeCompleto = `${c.posto || ""} ${c.nome}`;
+
+        resultados.innerHTML += `
+            <div class="resultado-item" onclick="selecionarClienteConfig(${c.id})">
+                ${nomeCompleto}
+            </div>
+        `;
+    });
+}
+
+function selecionarClienteConfig(id){
+    const cliente = clientesCache.find(c => c.id === id);
+
+    if(!cliente){
+        alert("Cliente não encontrado");
+        return;
+    }
+
+    clienteConfigSelecionado = cliente.id;
+
+    document.getElementById("pesquisaClienteConfig").value =
+        `${cliente.posto || ""} ${cliente.nome}`;
+
+    document.getElementById("resultadosClientesConfig").innerHTML = "";
+
+    document.getElementById("configNome").value = cliente.nome;
+    document.getElementById("configPosto").value = cliente.posto || "";
+    document.getElementById("configTelefone").value = cliente.telefone || "";
+
+    document.getElementById("formConfigUsuario").style.display = "block";
+}
+
+async function salvarConfiguracaoUsuario(){
+    if(!clienteConfigSelecionado){
+        alert("Selecione um cliente");
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const nome = document.getElementById("configNome").value;
+    const posto = document.getElementById("configPosto").value;
+    const telefone = document.getElementById("configTelefone").value;
+
+    const res = await fetch(`${API}/admin/usuario/${clienteConfigSelecionado}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: token
+        },
+        body: JSON.stringify({
+            nome,
+            posto,
+            telefone
+        })
+    });
+
+    if(!res.ok){
+        alert("Erro ao salvar alterações");
+        return;
+    }
+
+    alert("Usuário atualizado com sucesso!");
+
+    await carregarConfiguracoes();
+}
+
+async function excluirUsuarioSelecionado(){
+
+    if(!clienteConfigSelecionado){
+        alert("Selecione um cliente");
+        return;
+    }
+
+    const confirmar = confirm(
+        "Tem certeza que deseja excluir este usuário?\n\n" +
+        "Essa ação também pode remover o histórico dele e não poderá ser desfeita."
+    );
+
+    if(!confirmar){
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API}/admin/usuario/${clienteConfigSelecionado}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: token
+        }
+    });
+
+    if(!res.ok){
+        alert("Erro ao excluir usuário");
+        return;
+    }
+
+    alert("Usuário excluído com sucesso!");
+
+    await carregarConfiguracoes();
+}
+
+async function iniciar(){
+    await verificarAdmin();
+    await carregarPeriodos();
+    await carregarDashboard();
+}
+
+async function cobrarClienteSelecionado(){
+
+    if(!clienteHistoricoSelecionado){
+
+        alert("Selecione um cliente");
+
+        return;
+    }
+
+    const periodoId =
+        document.getElementById("periodoHistoricoAdmin").value;
+
+    if(!periodoId){
+
+        alert("Selecione um mês");
+
+        return;
+    }
+
+    if(!confirm("Enviar cobrança para este cliente?")){
+        return;
+    }
+
+    const token =
+        localStorage.getItem("token");
+
+    const res = await fetch(
+        `${API}/admin/cobrar-cliente`,
+        {
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json",
+                Authorization: token
+            },
+
+            body: JSON.stringify({
+                usuarioId: clienteHistoricoSelecionado,
+                periodoId: parseInt(periodoId)
+            })
+        }
+    );
+
+    if(!res.ok){
+
+        const erro = await res.text();
+
+        alert("Erro: " + erro);
+
+        return;
+    }
+
+    alert("Cobrança enviada com sucesso!");
+}
+
+//provisorio
+    async function baixarMensagensCobranca(){
+
+    const token = localStorage.getItem("token");
+
+    const periodoId =
+        document.getElementById("periodoDashboard").value;
+
+    if(!periodoId){
+        alert("Selecione um mês");
+        return;
+    }
+
+    const res = await fetch(
+        `${API}/admin/mensagens-cobranca/${periodoId}`,
+        {
+            headers:{
+                Authorization: token
+            }
+        }
+    );
+
+    if(!res.ok){
+        const erro = await res.text();
+        alert("Erro ao gerar arquivo: " + erro);
+        return;
+    }
+
+    const arquivo = await res.blob();
+
+    const url = URL.createObjectURL(arquivo);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    const nomeArquivo =
+        res.headers
+            .get("Content-Disposition")
+            ?.match(/filename="?([^"]+)"?/)?.[1]
+        || "mensagens-cobranca.txt";
+
+    link.download = nomeArquivo;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    URL.revokeObjectURL(url);
+}
+    
+iniciar();
+</script>
+
+
+    <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+        <div class="spinner"></div>
+        <div id="loadingTexto" class="loading-texto">
+        Enviando mensagens...
+    </div>
+    </div>
+</body>
+</html>

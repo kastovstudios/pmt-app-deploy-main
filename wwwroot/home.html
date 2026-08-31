@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>Bem-vindo</h2>
+    <p id="user"></p>
+    <button onclick="trocar('produtos')">Produtos</button>
+    <button onclick="trocar('historico')">Historico</button>
+    <button onclick="logout()">Sair</button>
+    <button id="btnAdmin" onclick="window.location.href='admin.html'" style="display:none;"> Admin</button>
+</div>
+
+<script>
+
+function trocar(troca){
+    if(troca == "produtos"){
+        window.location.replace("produtos.html");
+    }
+    if(troca == "historico"){
+        window.location.replace("historico.html");
+    }
+}
+
+
+async function init() {
+    const API = window.location.origin;
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    const res = await fetch(`${API}/me`, {
+        headers: { Authorization: token }
+    });
+
+    if (!res.ok) {
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+        return;
+    }
+
+    const data = await res.json();
+    document.getElementById("user").innerText = "Olá, "+data.posto+" "  +data.nome;
+
+    if(data.admin){
+    document.getElementById("btnAdmin").style.display = "block";
+}
+}
+
+function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+}
+
+init();
+</script>
+
+</body>
+</html>

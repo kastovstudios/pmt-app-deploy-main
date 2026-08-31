@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<div class="container">
+    <div class="topbar">
+
+        <button onclick="window.location.href='home.html'">
+            Home
+        </button>
+
+        <button onclick="window.location.href='historico.html'">
+            Histórico
+        </button>
+
+    </div>
+
+
+    <h2>Produtos</h2>
+
+    <div id="gridProdutos" class="grid"></div>
+
+    <button class="btn-finalizar" onclick="comprar()">Finalizar Compra</button>
+
+</div>
+
+<style>
+@media (max-width: 768px){
+
+    .gridProdutos{
+        display:flex;
+        flex-direction:column;
+    }
+
+    .card{
+        width:100%;
+    }
+}
+ .controle button{
+    width:45px;
+    height:45px;
+    font-size:20px;
+}
+
+input,
+select,
+textarea{
+    font-size:16px;
+}
+
+body{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    margin-bottom:5px;
+}
+
+.topbar button{
+
+    width:auto;
+
+    padding:10px 18px;
+
+    background:#334155;
+
+    border:none;
+
+    border-radius:8px;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:14px;
+}
+
+.topbar button:hover{
+    background:#475569;
+}
+.container{
+    padding-bottom:120px;
+}
+h2{
+    text-align: center;
+}
+</style>
+
+<script>
+let carrinho = {};
+
+async function carregarProdutos() {
+    const API = window.location.origin;
+    const res = await fetch(`${API}/produtos`);
+    const data = await res.json();
+
+    const grid = document.getElementById("gridProdutos");
+    grid.innerHTML = "";
+
+    data.forEach(p => {
+        carrinho[p.id] = 0;
+
+        grid.innerHTML += `
+            <div class="card">
+                <h3 class="nomeProduto">${p.nome}</h3>
+                <p class= "precoProduto">R$ ${p.preco}</p>
+
+                <div class="controle">
+                    <button onclick="diminuir(${p.id})">-</button>
+                    <span id="qtd-${p.id}">0</span>
+                    <button onclick="aumentar(${p.id})">+</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function aumentar(id) {
+    carrinho[id]++;
+    document.getElementById(`qtd-${id}`).innerText = carrinho[id];
+}
+
+function diminuir(id) {
+    if (carrinho[id] > 0) {
+        carrinho[id]--;
+        document.getElementById(`qtd-${id}`).innerText = carrinho[id];
+    }
+}
+
+async function comprar(){
+
+    const token =
+        localStorage.getItem("token");
+
+    let compras = [];
+
+    for(const id in carrinho){
+
+        const qtd = carrinho[id];
+
+        if(qtd > 0){
+
+            compras.push({
+                produtoId: parseInt(id),
+                quantidade: qtd
+            });
+        }
+    }
+
+    if(compras.length === 0){
+
+        alert("Selecione produtos");
+
+        return;
+    }
+
+    // FETCH
+    const res = await fetch("/comprar",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json",
+            "Authorization": token
+        },
+
+        body: JSON.stringify(compras)
+    });
+
+    if(!res.ok){
+
+        alert("Erro ao registrar compra");
+
+        return;
+    }
+
+    // JSON DA RESPOSTA
+    const data = await res.json();
+
+    // REDIRECIONA PRO COMPROVANTE
+    window.location.href =
+        `comprovante.html?id=${data.compraId}`;
+}
+
+async function init() {
+    const API = window.location.origin;
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    const res = await fetch(`${API}/me`, {
+        headers: { Authorization: token }
+    });
+
+    if (!res.ok) {
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+        return;
+    }
+
+    const data = await res.json();
+    
+}
+init();
+carregarProdutos();
+</script>
+
+</body>
+</html>

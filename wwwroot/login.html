@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Login</h2>
+
+    <input id="telefone" placeholder="Telefone">
+    <input id="senha" type="password" placeholder="Senha">
+
+    <button onclick="login()">Entrar</button>
+
+    <p>Não tem conta? <a href="register.html">Cadastrar</a></p>
+</div>
+
+<script>
+async function verificarLogado(){
+    const token = localStorage.getItem("token");
+
+    if(!token){
+        return;
+    }
+
+    try{
+        const res = await fetch("/me",{
+            headers:{
+                Authorization: token
+            }
+        });
+
+        if(!res.ok){
+            localStorage.removeItem("token");
+            return;
+        }
+
+        window.location.replace("home.html");
+    }
+    catch{
+        localStorage.removeItem("token");
+    }
+}
+
+async function login() {
+    const API = window.location.origin;
+
+    const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            telefone: document.getElementById("telefone").value,
+            senha: document.getElementById("senha").value
+        })
+    });
+
+    if (!res.ok) {
+        alert("Login inválido");
+        return;
+    }
+
+    const data = await res.json();
+
+    localStorage.setItem("token", data.token);
+
+    window.location.replace("home.html");
+}
+
+verificarLogado();
+</script>
