@@ -1,7 +1,7 @@
 body{
     margin:0;
     font-family:Arial;
-    background:#0f172a;
+    background:#181818;
     color:white;
 }
 
@@ -9,7 +9,6 @@ body{
     display:flex;
     height:100vh;
 }
-
 
 .loading-overlay{
     position:fixed;
@@ -25,7 +24,6 @@ body{
     color:white;
     font-size:24px;
 }
-
 
 .spinner{
     width:90px;
@@ -46,16 +44,13 @@ body{
     text-align:center;
 }
 
-
-
-
 /* =========================
     SIDEBAR
 ========================= */
 
 .sidebar{
     width:220px;
-    background:#1e293b;
+    background:#2a2a2a;
     padding:20px;
     box-sizing:border-box;
 }
@@ -69,7 +64,7 @@ body{
     padding:12px;
     margin-bottom:10px;
 
-    background:#334155;
+    background:#3f3f3f;
     border:none;
     color:white;
 
@@ -78,7 +73,7 @@ body{
 }
 
 .sidebar button:hover{
-    background:#475569;
+    background:#555555;
 }
 
 /* =========================
@@ -97,7 +92,7 @@ body{
 ========================= */
 
 .card{
-    background:#1e293b;
+    background:#2a2a2a;
     padding:20px;
     border-radius:10px;
 
@@ -129,7 +124,7 @@ select{
     padding:12px;
     margin-bottom:10px;
 
-    background:#334155;
+    background:#3f3f3f;
     border:none;
     color:white;
 
@@ -154,7 +149,7 @@ button{
 }
 
 .item{
-    background:#1e293b;
+    background:#2a2a2a;
 
     padding:12px;
     margin-bottom:10px;
@@ -180,7 +175,7 @@ button{
     width:100%;
     max-width:700px;
 
-    background:#1e293b;
+    background:#2a2a2a;
 
     border-radius:8px;
     overflow:hidden;
@@ -192,7 +187,7 @@ button{
 
     padding:12px;
 
-    background:#334155;
+    background:#3f3f3f;
     font-weight:bold;
 }
 
@@ -207,11 +202,11 @@ button{
 
     padding:12px;
 
-    border-top:1px solid #334155;
+    border-top:1px solid #3f3f3f;
 }
 
 .grid-row:hover{
-    background:#475569;
+    background:#555555;
 }
 
 .grid-header span,
@@ -230,24 +225,24 @@ button{
 }
 
 .resultados-clientes{
-    background:#1e293b;
+    background:#2a2a2a;
     border-radius:8px;
     margin-top:5px;
 
     max-height:250px;
     overflow-y:auto;
 
-    border:1px solid #334155;
+    border:1px solid #3f3f3f;
 }
 
 .resultado-item{
     padding:10px;
     cursor:pointer;
-    border-bottom:1px solid #334155;
+    border-bottom:1px solid #3f3f3f;
 }
 
 .resultado-item:hover{
-    background:#334155;
+    background:#3f3f3f;
 }
 
 /* =========================
