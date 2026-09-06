@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 public static class Database
 {
     private static string connectionString =
-    "Data Source=app/data/banco.db";
+    "Data Source=/app/data/banco.db";
     public static SqliteConnection GetConnection()
     {
         return new SqliteConnection(connectionString);
