@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<script>
+
+async function verificarLogado(){
+
+    const token =
+        localStorage.getItem("token");
+
+    if(!token){
+        return;
+    }
+
+    try{
+
+        const res = await fetch("/me",{
+            headers:{
+                Authorization: token
+            }
+        });
+
+        // TOKEN INVÁLIDO
+        if(!res.ok){
+
+            localStorage.removeItem("token");
+
+            return;
+        }
+
+        // TOKEN VÁLIDO
+        window.location.href = "home.html";
+
+    }
+    catch{
+
+        localStorage.removeItem("token");
+    }
+}
+
+verificarLogado();
+
+</script>
+
+<body>
+
+<div class="container">
+
+    <h2>Cadastro</h2>
+
+    <select id="posto">
+        <option value="Sd Ev">Sd Ev</option>
+        <option value="Sd">Sd</option>
+        <option value="Cb">Cb</option>
+        <option value="Al CFST">Al CFST</option>
+        <option value="3º Sgt">3º Sgt</option>
+        <option value="2º Sgt">2º Sgt</option>
+        <option value="1º Sgt">1º Sgt</option>
+        <option value="Sub Ten">Sub Ten</option>
+        <option value="Asp">Asp</option>
+        <option value="2º Ten">2º Ten</option>
+        <option value="1º Ten">1º Ten</option>
+        <option value="Cap">Cap</option>
+        <option value="Maj">Maj</option>
+        <option value="TC">TC</option>
+        <option value="Cel">Cel</option>
+    </select>
+
+    <input id="nome" placeholder="Nome de guerra">
+
+    <input
+        id="telefone"
+        placeholder="Telefone (Whatsapp)"
+    >
+
+    <input
+        id="senha"
+        type="password"
+        placeholder="Senha"
+    >
+
+    <button onclick="registrar()">
+        Cadastrar
+    </button>
+
+</div>
+
+<script>
+
+async function registrar(){
+    const API = window.location.origin;
+    const nome =
+        document.getElementById("nome").value;
+
+    const posto =
+        document.getElementById("posto").value;
+
+    const telefone =
+        document.getElementById("telefone").value;
+
+    const senha =
+        document.getElementById("senha").value;
+
+    const res = await fetch(`${API}/register`,{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body: JSON.stringify({
+            nome,
+            posto,
+            telefone,
+            senha
+        })
+    });
+
+    if(!res.ok){
+
+        alert("Erro ao cadastrar");
+
+        return;
+    }
+
+    alert("Conta criada");
+
+    window.location.href = "login.html";
+}
+
+</script>
+
+</body>
+</html>

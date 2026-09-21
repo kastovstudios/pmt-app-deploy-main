@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+<div class="container">
+    <div id="loginNormal">
+        <h2>PMT  -  Login</h2>
+
+        <input id="telefone" placeholder="Telefone">
+        <input id="senha" type="password" placeholder="Senha">
+
+        <button onclick="login()">Entrar</button>
+
+        <p>Não tem conta? <a href="register.html">Cadastrar</a></p>
+    </div>
+
+    <div id="trocaSenhaObrigatoria" style="display:none;">
+        <h2>Crie uma nova senha</h2>
+        <p>Sua senha foi resetada pelo administrador. Para continuar, cadastre uma nova senha.</p>
+
+        <input id="novaSenha" type="password" placeholder="Nova senha">
+        <input id="confirmarNovaSenha" type="password" placeholder="Confirmar nova senha">
+
+        <button onclick="salvarNovaSenha()">Salvar nova senha</button>
+    </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+async function verificarLogado(){
+    const token = localStorage.getItem("token");
+
+    if(!token){
+        return;
+    }
+
+    try{
+        const res = await fetch("/me",{
+            headers:{
+                Authorization: token
+            }
+        });
+
+        if(!res.ok){
+            localStorage.removeItem("token");
+            return;
+        }
+
+        const data = await res.json();
+
+        if(data.precisaTrocarSenha){
+            document.getElementById("loginNormal").style.display = "none";
+            document.getElementById("trocaSenhaObrigatoria").style.display = "block";
+            return;
+        }
+
+        window.location.replace("home.html");
+    }
+    catch{
+        localStorage.removeItem("token");
+    }
+}
+
+async function login() {
+    const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            telefone: document.getElementById("telefone").value,
+            senha: document.getElementById("senha").value
+        })
+    });
+
+    if (!res.ok) {
+        alert("Login inválido");
+        return;
+    }
+
+    const data = await res.json();
+
+    localStorage.setItem("token", data.token);
+
+    if(data.precisaTrocarSenha){
+        document.getElementById("loginNormal").style.display = "none";
+        document.getElementById("trocaSenhaObrigatoria").style.display = "block";
+        document.getElementById("novaSenha").focus();
+        return;
+    }
+
+    window.location.replace("home.html");
+}
+
+async function salvarNovaSenha(){
+    const novaSenha = document.getElementById("novaSenha").value;
+    const confirmar = document.getElementById("confirmarNovaSenha").value;
+
+    if(novaSenha.length < 6){
+        alert("A nova senha deve ter pelo menos 6 caracteres.");
+        return;
+    }
+
+    if(novaSenha !== confirmar){
+        alert("As senhas não coincidem.");
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API}/alterar-senha-obrigatoria`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: token
+        },
+        body: JSON.stringify({
+            novaSenha
+        })
+    });
+
+    if(!res.ok){
+        const erro = await res.text();
+        alert(erro || "Erro ao alterar senha");
+        return;
+    }
+
+    alert("Senha alterada com sucesso!");
+    window.location.replace("home.html");
+}
+
+verificarLogado();
+</script>
+
+</body>
+</html>
