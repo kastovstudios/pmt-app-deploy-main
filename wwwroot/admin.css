@@ -329,6 +329,47 @@ button{
 
 .grid-cliente-row{
     cursor:pointer;
+    align-items:center;
+    gap:12px;
+}
+
+.grid-cliente-identificacao{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    flex:1;
+    min-width:0;
+}
+
+.grid-cliente-identificacao span{
+    width:auto;
+    overflow-wrap:anywhere;
+}
+
+.grid-cliente-row > .grid-cliente-valor{
+    width:auto;
+    white-space:nowrap;
+}
+
+.btn-cobrar-whatsapp{
+    background:#15803d;
+    color:#fff;
+    padding:6px 10px;
+    margin:0;
+    font-size:12px;
+    border:0;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.btn-cobrar-whatsapp:hover:not(:disabled){
+    background:#166534;
+}
+
+.btn-cobrar-whatsapp:disabled{
+    opacity:0.5;
+    cursor:not-allowed;
 }
 
 .grid-cliente-row span:last-child,
@@ -390,4 +431,36 @@ body::before {
 body > * {
     position: relative;
     z-index: 1;
+}
+
+
+/* Ordenação da tabela de clientes */
+.grid-sort-header{
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+
+.grid-sort-header-right{
+    justify-content:flex-end;
+}
+
+.grid-sort-btn{
+    width:25px;
+    min-width:25px;
+    height:25px;
+    padding:0;
+    margin:0;
+    border:1px solid rgba(255, 174, 59, .55);
+    border-radius:5px;
+    background:rgba(255, 174, 59, .10);
+    color:#ffae3b;
+    font-size:13px;
+    line-height:23px;
+    text-align:center;
+    cursor:pointer;
+}
+
+.grid-sort-btn:hover{
+    background:rgba(255, 174, 59, .20);
 }

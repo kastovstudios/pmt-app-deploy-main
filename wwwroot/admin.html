@@ -71,8 +71,14 @@
 
             <div class="grid-container grid-clientes-container">
                 <div class="grid-header">
-                    <span>Cliente</span>
-                    <span>Dívida</span>
+                    <span class="grid-sort-header">
+                        Cliente
+                        <button type="button" class="grid-sort-btn" id="sortClienteBtn" onclick="ordenarGridClientes('cliente', event)" title="Ordenar por cliente">↕</button>
+                    </span>
+                    <span class="grid-sort-header grid-sort-header-right">
+                        Dívida
+                        <button type="button" class="grid-sort-btn" id="sortDividaBtn" onclick="ordenarGridClientes('divida', event)" title="Ordenar por dívida">↕</button>
+                    </span>
                 </div>
 
                 <div id="listaClientesDividas" class="grid-body grid-clientes-body"></div>
@@ -278,6 +284,7 @@
 const API = window.location.origin;
 
 let clientesCache = [];
+let ordenacaoGridClientes = { campo: null, direcao: 'asc' };
 let clienteSelecionado = null;
 let clienteHistoricoSelecionado = null;
 let clienteConfigSelecionado = null;
@@ -525,6 +532,23 @@ async function carregarGridClientes(){
         return postoSelecionado === "" || postoCliente === postoSelecionado;
     });
 
+    if(ordenacaoGridClientes.campo){
+        clientesFiltrados.sort((a, b) => {
+            let comparacao = 0;
+
+            if(ordenacaoGridClientes.campo === 'cliente'){
+                const nomeA = `${a.posto || ""} ${a.nome || ""}`.trim();
+                const nomeB = `${b.posto || ""} ${b.nome || ""}`.trim();
+                comparacao = nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
+            }else if(ordenacaoGridClientes.campo === 'divida'){
+                comparacao = Number(a.total || 0) - Number(b.total || 0);
+            }
+
+            return ordenacaoGridClientes.direcao === 'asc' ? comparacao : -comparacao;
+        });
+    }
+
+    atualizarIconesOrdenacaoGrid();
     lista.innerHTML = "";
 
     if(clientesFiltrados.length === 0){
@@ -534,16 +558,75 @@ async function carregarGridClientes(){
 
     clientesFiltrados.forEach(c => {
         const nomeCompleto = `${c.posto || ""} ${c.nome}`.trim();
-        const nomeSeguro = nomeCompleto.replace(/'/g, "\\'");
+        const cliente = clientesCache.find(cliente => cliente.id === c.id);
+        let telefone = String(cliente?.telefone || "").replace(/\D/g, "");
+        if(telefone.length === 10 || telefone.length === 11) telefone = "55" + telefone;
+        const telefoneValido = /^55\d{10,11}$/.test(telefone);
+        const valor = Number(c.total).toFixed(2).replace('.', ',');
+        const periodo = document.getElementById("periodoHistoricoAdmin").selectedOptions[0].textContent;
+        const mensagem = `Bom dia ${nomeCompleto}!\n` +
+            `Segue o valor do que consumiu no PMT no período ${periodo}.\n` +
+            `Valor: R$ ${valor}.\n\nPix: 12996518343\n\n` +
+            `*NUBANK (Daniel Fonseca de Araújo)*\n\nFAVOR ENVIAR O COMPROVANTE APÓS O PAGAMENTO\n` +
+            `Obs: Caso tenha alguma dúvida sobre valores ou algum item, só mencionar que verificamos.`;
 
-        lista.innerHTML += `
-            <div class="grid-row grid-cliente-row"
-                onclick="selecionarClienteDaGrid(${c.id}, '${nomeSeguro}')">
-                <span>${nomeCompleto}</span>
-                <span class="grid-cliente-valor">R$ ${Number(c.total).toFixed(2).replace('.', ',')}</span>
-            </div>
-        `;
+        const linha = document.createElement("div");
+        linha.className = "grid-row grid-cliente-row";
+        linha.addEventListener("click", () => selecionarClienteDaGrid(c.id, nomeCompleto));
+
+        const identificacao = document.createElement("div");
+        identificacao.className = "grid-cliente-identificacao";
+        const nome = document.createElement("span");
+        nome.textContent = nomeCompleto;
+        const cobrar = document.createElement("button");
+        cobrar.type = "button";
+        cobrar.className = "btn-cobrar-whatsapp";
+        cobrar.textContent = "Cobrar";
+        cobrar.disabled = !telefoneValido || Number(c.total) <= 0;
+        cobrar.title = !telefoneValido ? "Cliente sem telefone válido" :
+            Number(c.total) <= 0 ? "Cliente sem dívida neste período" : `Cobrar ${nomeCompleto} pelo WhatsApp`;
+        cobrar.setAttribute("aria-label", cobrar.title);
+        cobrar.addEventListener("click", event => {
+            event.stopPropagation();
+            window.open(`https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`, "_blank", "noopener,noreferrer");
+        });
+        identificacao.append(nome, cobrar);
+
+        const divida = document.createElement("span");
+        divida.className = "grid-cliente-valor";
+        divida.textContent = `R$ ${valor}`;
+        linha.append(identificacao, divida);
+        lista.append(linha);
     });
+}
+
+function ordenarGridClientes(campo, event){
+    if(event) event.stopPropagation();
+
+    if(ordenacaoGridClientes.campo === campo){
+        ordenacaoGridClientes.direcao = ordenacaoGridClientes.direcao === 'asc' ? 'desc' : 'asc';
+    }else{
+        ordenacaoGridClientes.campo = campo;
+        ordenacaoGridClientes.direcao = 'asc';
+    }
+
+    carregarGridClientes();
+}
+
+function atualizarIconesOrdenacaoGrid(){
+    const btnCliente = document.getElementById('sortClienteBtn');
+    const btnDivida = document.getElementById('sortDividaBtn');
+
+    if(btnCliente) btnCliente.textContent = '↕';
+    if(btnDivida) btnDivida.textContent = '↕';
+
+    if(ordenacaoGridClientes.campo === 'cliente' && btnCliente){
+        btnCliente.textContent = ordenacaoGridClientes.direcao === 'asc' ? '▲' : '▼';
+    }
+
+    if(ordenacaoGridClientes.campo === 'divida' && btnDivida){
+        btnDivida.textContent = ordenacaoGridClientes.direcao === 'asc' ? '▲' : '▼';
+    }
 }
 
 function selecionarClienteDaGrid(id, nome){
