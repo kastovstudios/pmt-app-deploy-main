@@ -1,0 +1,132 @@
+/* Camada de layout compartilhada. As cores e imagens continuam nos temas originais. */
+* { box-sizing: border-box; }
+html { scroll-padding-top: 24px; }
+body.ui-page { font-family: "Segoe UI", Arial, sans-serif; margin: 0; height: auto; min-height: 100dvh; line-height: 1.5; }
+.ui-page button, .ui-page input, .ui-page select { font: inherit; }
+.ui-page button, .ui-page a { touch-action: manipulation; }
+.ui-page button { min-height: 44px; border-radius: 10px; font-weight: 600; transition: box-shadow .18s, transform .18s; }
+.ui-page button:hover:not(:disabled) { box-shadow: 0 4px 14px #0002; transform: translateY(-1px); }
+.ui-page button:disabled { opacity: .55; cursor: not-allowed; }
+.ui-page :is(button, a, input, select):focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.ui-page input, .ui-page select { min-height: 46px; border-radius: 10px; padding: 11px 14px; max-width: 100%; font-size: 16px; }
+.ui-page h2 { font-size: clamp(24px, 3vw, 32px); line-height: 1.2; letter-spacing: -.7px; margin: 0 0 12px; }
+.ui-page h3 { line-height: 1.35; }
+.ui-page .ui-eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 11px; font-weight: 700; opacity: .65; margin: 0 0 10px; }
+.ui-page .ui-description { opacity: .75; margin: 0 0 24px; font-size: 14px; }
+.ui-page .ui-label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 5px; }
+.ui-page:not(.ui-admin) { display: block; padding: clamp(16px, 4vw, 48px); }
+.ui-page:not(.ui-admin) > .container { width: 100%; max-width: 1100px; height: auto; margin: 0 auto; padding: clamp(20px, 3vw, 36px); gap: 16px; border-radius: 20px; box-shadow: 0 16px 48px #0002; position: relative; }
+.ui-page.ui-auth { display: grid; place-items: center; }
+.ui-page.ui-auth > .container { max-width: 460px; }
+.ui-auth form { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.ui-auth input, .ui-auth select { margin: 0 0 6px; }
+.ui-auth form > button[type=submit] { margin-top: 16px; }
+.ui-auth p { font-size: 14px; }
+.ui-auth .ui-form-error { margin: 8px 0 0; font-weight: 600; }
+.ui-password { position: relative; }
+.ui-password input { padding-right: 90px; width: 100%; }
+.ui-page .ui-password button { position: absolute; right: 4px; top: 2px; width: auto; min-height: 40px; padding: 6px 10px; background: transparent; color: inherit; font-size: 12px; margin: 0; }
+.ui-page.ui-home > .container { max-width: 760px; }
+.ui-home .ui-home-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.ui-home .ui-home-menu button { text-align: left; padding: 24px; min-height: 112px; display: flex; flex-direction: column; justify-content: center; font-size: 18px; }
+.ui-home .ui-home-menu button small { display: block; font-size: 13px; font-weight: 400; opacity: .8; margin-top: 5px; }
+.ui-page .topbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 20px; }
+.ui-page .topbar button { flex: 0 1 auto; width: auto; margin: 0; }
+.ui-page .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; max-height: none; overflow: visible; padding: 0; }
+.ui-page .grid .card { width: auto; margin: 0; padding: 22px; border-radius: 14px; display: flex; flex-direction: column; min-width: 0; }
+.ui-page .nomeProduto { font-size: 17px; overflow-wrap: anywhere; margin: 0 0 8px; }
+.ui-page .precoProduto { font-size: 21px; font-weight: 700; margin: 0 0 20px; }
+.ui-page .controle { margin-top: auto; gap: 14px; }
+.ui-page .controle button { width: 44px; min-width: 44px; height: 44px; padding: 0; }
+.ui-page .controle span { width: auto; min-width: 24px; font-variant-numeric: tabular-nums; }
+.ui-page.ui-products > .container { padding-bottom: 110px; }
+.ui-page .btn-finalizar { position: fixed; left: 50%; transform: translateX(-50%); z-index: 20; width: calc(100% - 32px); max-width: 640px; bottom: max(16px, env(safe-area-inset-bottom)); margin: 0; min-height: 58px; box-shadow: 0 8px 30px #0005; font-size: 16px; }
+.ui-page #buscaProdutos { margin: 0 0 12px; }
+.ui-page .ui-empty { padding: 24px; text-align: center; opacity: .75; }
+.ui-page .historico-item { border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+.ui-page .linha1, .ui-page .linha2 { gap: 12px; flex-wrap: wrap; }
+.ui-page .historico-total { padding: 18px; border-top: 1px solid #ffffff26; line-height: 1.8; font-variant-numeric: tabular-nums; }
+.ui-page #statusPagamento { margin: 0; font-weight: 600; }
+.ui-page.ui-receipt > .container { max-width: 720px; }
+.ui-page.ui-receipt .card { width: 100%; text-align: left; }
+.ui-page .item { gap: 14px; overflow-wrap: anywhere; }
+.ui-page.ui-admin > .container { width: 100%; min-height: 100dvh; height: auto; display: flex; align-items: stretch; }
+.ui-admin .sidebar { position: sticky; top: 0; height: 100dvh; width: 236px; flex: 0 0 236px; padding: 30px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.ui-admin .sidebar h3 { font-size: 22px; margin: 0 10px 24px; }
+.ui-admin .sidebar button { text-align: left; padding: 13px 14px; margin: 0; font-size: 14px; white-space: normal; border: 1px solid transparent; flex-shrink: 0; }
+.ui-admin .sidebar button[aria-current=page] { border-color: currentColor; box-shadow: inset 3px 0 currentColor; }
+.ui-admin .sidebar button:last-child { margin-top: auto; }
+.ui-admin .content { min-width: 0; width: calc(100% - 236px); padding: clamp(20px, 3vw, 48px); overflow: visible; }
+.ui-admin .content > div { max-width: 1200px; margin: 0 auto; }
+.ui-admin .content h2 { margin-bottom: 24px; }
+.ui-admin .content > div > select, .ui-admin .content > div > input { max-width: 560px; display: block; }
+.ui-admin .card { width: min(280px, 100%); padding: 24px; border-radius: 16px; margin: 0 16px 20px 0; vertical-align: top; box-shadow: 0 8px 24px #0001; }
+.ui-admin .card h3 { font-size: 13px; font-weight: 500; opacity: .75; margin: 0 0 12px; }
+.ui-admin .card p { font-size: 30px; letter-spacing: -.8px; font-weight: 700; margin: 0; font-variant-numeric: tabular-nums; }
+.ui-admin #dashboard > button { margin: 4px 8px 8px 0; }
+.ui-admin .grid-container { width: 100%; max-width: none; border-radius: 14px; margin-top: 20px; border: 1px solid #ffffff1a; }
+.ui-admin .grid-header, .ui-admin .grid-row { min-width: 0; gap: 14px; align-items: center; padding: 16px 18px; }
+.ui-admin .grid-header { font-size: 12px; font-weight: 700; }
+.ui-admin .grid-body, .ui-admin .grid-clientes-body { max-height: min(60dvh, 640px); scrollbar-gutter: stable; }
+.ui-admin .grid-row span { min-width: 0; overflow-wrap: anywhere; }
+.ui-admin .grid-cliente-identificacao { gap: 8px; }
+.ui-admin .grid-cliente-identificacao > span { flex-basis: 100%; font-weight: 600; }
+.ui-admin .grid-cliente-valor { font-variant-numeric: tabular-nums; }
+.ui-admin .grid-row button { min-height: 36px; width: auto; font-size: 12px; padding: 8px 10px; }
+.ui-admin .grid-sort-btn { width: 32px; min-width: 32px; min-height: 32px; height: 32px; line-height: 1; padding: 0; }
+.ui-admin .pesquisa-container { max-width: 700px; }
+.ui-admin .resultado-item { padding: 14px; }
+.ui-admin .estoque-controle { flex-wrap: wrap; }
+.ui-admin .estoque-controle input { min-width: 150px; }
+.ui-page #editorProduto { border-radius: 18px; padding: 28px; }
+.ui-page [hidden] { display: none !important; }
+@media (max-width: 800px) {
+  .ui-page.ui-admin > .container { flex-direction: column; }
+  .ui-admin .sidebar { position: relative; height: auto; width: 100%; flex: none; padding: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .ui-admin .sidebar h3 { display: block; grid-column: 1 / -1; margin: 0 0 6px; font-size: 19px; }
+  .ui-admin .sidebar button { font-size: 12px; padding: 10px 8px; min-height: 46px; text-align: center; text-overflow: clip; }
+  .ui-admin .sidebar button:last-child { margin: 0; }
+  .ui-admin .content { width: 100%; padding: 22px 16px; }
+  .ui-admin .card { width: calc(50% - 10px); margin-right: 10px; padding: 18px; }
+  .ui-admin .grid-header, .ui-admin .grid-row { padding: 14px 12px; gap: 10px; }
+  .ui-admin input, .ui-admin select { width: 100%; }
+  .ui-admin button { width: auto; }
+  .ui-admin .grid-clientes-container .grid-header > span:first-child { flex: 1; }
+  .ui-admin .grid-clientes-container .grid-header > span:last-child { width: auto; }
+  .ui-admin .grid-cliente-row > .grid-cliente-valor { font-size: 13px; }
+}
+@media (max-width: 480px) {
+  .ui-page:not(.ui-admin) { padding: 16px 12px; }
+  .ui-page:not(.ui-admin) > .container { padding: 22px 16px; border-radius: 16px; }
+  .ui-page.ui-products > .container { padding-bottom: 100px; }
+  .ui-page .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ui-page .grid .card { padding: 14px 10px; }
+  .ui-page .nomeProduto { font-size: 15px; }
+  .ui-page .precoProduto { font-size: 18px; }
+  .ui-page .controle { gap: 6px; }
+  .ui-page .controle button { width: 36px; min-width: 36px; }
+  .ui-home .ui-home-menu { grid-template-columns: 1fr; }
+  .ui-home .ui-home-menu button { min-height: 90px; padding: 20px; }
+  .ui-admin .card p { font-size: 24px; }
+  .ui-admin .grid-cliente-row { align-items: flex-start; }
+  .ui-admin .grid-cliente-valor { margin-top: 4px; }
+  .ui-admin .grid-cliente-identificacao > button { flex: 0 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-page button { transition: none; }
+  .ui-page button:hover:not(:disabled) { transform: none; }
+}
+@media print {
+  .ui-page .topbar, .ui-page .sidebar, .ui-page.ui-receipt button { display: none; }
+  .ui-page.ui-receipt, .ui-page.ui-receipt > .container { padding: 0; box-shadow: none; }
+}
+
+.ui-page .btn-finalizar:hover:not(:disabled) { transform: translateX(-50%); }
+.ui-products h2 { text-align: left; }
+
+.ui-admin .ui-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 780px; gap: 16px; margin: 16px 0 24px; }
+.ui-admin .ui-metrics .card { width: 100%; margin: 0; }
+.ui-admin .ui-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.ui-page:not(.ui-admin) > .container::before { max-width: 100%; }
+@media (max-width: 360px) { .ui-page .grid { grid-template-columns: 1fr; } }

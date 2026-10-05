@@ -1,12 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="interface.css">
+<script src="interface.js" defer></script>
+<title>Histórico</title>
 </head>
 
-<body>
+<body class="ui-page ui-historico" data-page="historico">
 
 <div class="container">
 
@@ -20,11 +23,15 @@
         </button>
     </div>
 
-    <h2 class="titulo">Histórico</h2>
+    <p class="ui-eyebrow">Seus registros</p>
+<h2 class="titulo">Histórico</h2>
+<p class="ui-description">Acompanhe seus consumos e pagamentos por mês.</p>
 
     <select id="periodoCliente" onchange="carregarHistorico()"></select>
 
     <div id="lista" class="historico-lista"></div>
+
+    <p id="statusPagamento" role="status"></p>
 
     <div id="total" class="historico-total"></div>
 
@@ -100,6 +107,7 @@ async function carregarHistorico() {
     }
 
     const data = await res.json();
+    if(periodoId !== document.getElementById("periodoCliente").value) return;
 
     const lista = document.getElementById("lista");
     lista.innerHTML = "";
@@ -139,7 +147,12 @@ async function carregarHistorico() {
     });
 
     document.getElementById("total").innerText =
-        "TOTAL: R$ " + data.total.toFixed(2);
+        "CONSUMIDO: R$ " + data.total.toFixed(2).replace('.', ',') +
+        " | PAGO: R$ " + Number(data.valorPago).toFixed(2).replace('.', ',') +
+        " | PENDENTE: R$ " + Number(data.saldo).toFixed(2).replace('.', ',');
+    const status = document.getElementById("statusPagamento");
+    status.textContent = data.pago ? "Pago neste mês" : Number(data.saldo) > 0 ? "Pagamento pendente neste mês" : "Sem pendência neste mês";
+    status.style.color = data.pago ? "#4ade80" : "inherit";
 }
 
 init();

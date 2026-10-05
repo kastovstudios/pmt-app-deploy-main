@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <link rel="stylesheet" href="style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
+<link rel="stylesheet" href="interface.css">
+<script src="interface.js" defer></script>
+<title>Produtos</title>
 </head>
-<body>
+<body class="ui-page ui-products" data-page="produtos">
 
 <div class="container">
     <div class="topbar">
@@ -21,7 +24,9 @@
     </div>
 
 
-    <h2>Produtos</h2>
+    <p class="ui-eyebrow">Cardápio</p>
+<h2>Produtos</h2>
+<p class="ui-description">Escolha seus produtos e confira o total antes de finalizar.</p>
 
     <div id="gridProdutos" class="grid"></div>
 
@@ -115,14 +120,14 @@ async function carregarProdutos() {
         carrinho[p.id] = 0;
 
         grid.innerHTML += `
-            <div class="card">
+            <div class="card" data-price="${Number(p.preco)}">
                 <h3 class="nomeProduto">${p.nome}</h3>
-                <p class= "precoProduto">R$ ${p.preco}</p>
+                <p class= "precoProduto">R$ ${Number(p.preco).toFixed(2).replace('.', ',')}</p>
 
                 <div class="controle">
-                    <button onclick="diminuir(${p.id})">-</button>
+                    <button aria-label="Diminuir quantidade" onclick="diminuir(${p.id})">-</button>
                     <span id="qtd-${p.id}">0</span>
-                    <button onclick="aumentar(${p.id})">+</button>
+                    <button aria-label="Aumentar quantidade" onclick="aumentar(${p.id})">+</button>
                 </div>
             </div>
         `;

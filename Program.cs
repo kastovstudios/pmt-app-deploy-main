@@ -351,7 +351,7 @@ app.MapGet("/produtos", () =>
     conn.Open();
 
     var cmd = conn.CreateCommand();
-    cmd.CommandText = "SELECT * FROM Produtos";
+    cmd.CommandText = "SELECT Id, Nome, Preco FROM Produtos WHERE Excluido = 0";
 
     var reader = cmd.ExecuteReader();
     var lista = new List<object>();
@@ -388,6 +388,36 @@ app.MapPost("/admin/produto", async (HttpRequest request) =>
     return Results.Ok();
 });
 
+app.MapPut("/admin/produto/{id}", async (int id, HttpRequest request) =>
+{
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    var dados = await request.ReadFromJsonAsync<ProdutoDTO>();
+    if (dados == null || string.IsNullOrWhiteSpace(dados.Nome) || !double.IsFinite(dados.Preco) || dados.Preco < 0)
+        return Results.BadRequest("Informe um nome e um preço válido.");
+    using var conn = Database.GetConnection();
+    conn.Open();
+    var cmd = conn.CreateCommand();
+    cmd.CommandText = "UPDATE Produtos SET Nome = @nome, Preco = @preco WHERE Id = @id AND Excluido = 0";
+    cmd.Parameters.AddWithValue("@nome", dados.Nome.Trim());
+    cmd.Parameters.AddWithValue("@preco", dados.Preco);
+    cmd.Parameters.AddWithValue("@id", id);
+    if (cmd.ExecuteNonQuery() == 0) return Results.NotFound("Produto não encontrado.");
+    return Results.Ok();
+});
+
+app.MapDelete("/admin/produto/{id}", (int id, HttpRequest request) =>
+{
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    using var conn = Database.GetConnection();
+    conn.Open();
+    var cmd = conn.CreateCommand();
+    // Mantém o produto para os consumos e relatórios já registrados.
+    cmd.CommandText = "UPDATE Produtos SET Excluido = 1 WHERE Id = @id AND Excluido = 0";
+    cmd.Parameters.AddWithValue("@id", id);
+    if (cmd.ExecuteNonQuery() == 0) return Results.NotFound("Produto não encontrado.");
+    return Results.Ok();
+});
+
 app.MapPut("/admin/produto/{id}/preco", async (int id, HttpRequest request) =>
 {
     if (!IsAdmin(request)) return Results.Unauthorized();
@@ -401,7 +431,7 @@ app.MapPut("/admin/produto/{id}/preco", async (int id, HttpRequest request) =>
     conn.Open();
 
     var cmd = conn.CreateCommand();
-    cmd.CommandText = "UPDATE Produtos SET Preco = @preco WHERE Id = @id";
+    cmd.CommandText = "UPDATE Produtos SET Preco = @preco WHERE Id = @id AND Excluido = 0";
     cmd.Parameters.AddWithValue("@preco", dados.Preco);
     cmd.Parameters.AddWithValue("@id", id);
 
@@ -475,14 +505,14 @@ app.MapPost("/comprar", async (HttpRequest request) =>
         var precoCmd = conn.CreateCommand();
 
         precoCmd.CommandText =
-            "SELECT Preco FROM Produtos WHERE Id = @id";
+            "SELECT Preco FROM Produtos WHERE Id = @id AND Excluido = 0";
 
         precoCmd.Parameters.AddWithValue("@id", item.ProdutoId);
 
         var precoObj = precoCmd.ExecuteScalar();
 
         if (precoObj == null)
-            continue;
+            return Results.BadRequest("Produto indisponível. Atualize o catálogo.");
 
         double preco =
             Convert.ToDouble(precoObj);
@@ -702,10 +732,13 @@ app.MapGet("/historico/{periodoId}", (int periodoId, HttpRequest request) =>
         });
     }
 
+    reader.Close();
+    var pagamento = ObterPagamento(conn, userId.Value, periodoId, total);
     return Results.Ok(new
     {
-        itens = lista,
-        total
+        itens = lista, total,
+        valorPago = pagamento.ValorPago, saldo = pagamento.Saldo,
+        pago = pagamento.Pago, marcadoPago = pagamento.MarcadoPago
     });
 });
 
@@ -782,7 +815,7 @@ app.MapGet("/admin/mensagens-cobranca/{periodoId}",
             u.Nome,
             u.Posto,
             u.Telefone,
-            SUM(c.Quantidade * p.Preco) AS Total
+            MAX(0, ROUND(SUM(c.Quantidade * p.Preco) - COALESCE((SELECT pg.ValorPago FROM PagamentosMensais pg WHERE pg.UsuarioId = u.Id AND pg.PeriodoId = @periodo AND pg.MarcadoPago = 1), 0), 2)) AS Total
         FROM Consumo c
         JOIN Usuarios u
             ON c.UsuarioId = u.Id
@@ -794,7 +827,7 @@ app.MapGet("/admin/mensagens-cobranca/{periodoId}",
             u.Nome,
             u.Posto,
             u.Telefone
-        HAVING SUM(c.Quantidade * p.Preco) > 0
+        HAVING Total > 0
         ORDER BY u.Posto, u.Nome";
 
     cmd.Parameters.AddWithValue("@periodo", periodoId);
@@ -920,6 +953,63 @@ app.MapGet("/admin/clientes", (HttpRequest request) =>
     return Results.Ok(lista);
 });
 
+
+ResumoPagamento ObterPagamento(SqliteConnection conn, int usuarioId, int periodoId, double total)
+{
+    using var cmd = conn.CreateCommand();
+    cmd.CommandText = "SELECT MarcadoPago, ValorPago FROM PagamentosMensais WHERE UsuarioId = @u AND PeriodoId = @p";
+    cmd.Parameters.AddWithValue("@u", usuarioId);
+    cmd.Parameters.AddWithValue("@p", periodoId);
+    using var reader = cmd.ExecuteReader();
+    bool marcado = reader.Read() && reader.GetInt32(0) == 1;
+    return ResumoPagamento.Calcular(total, marcado ? reader.GetDouble(1) : 0, marcado);
+}
+
+app.MapPut("/admin/pagamento/{usuarioId}/{periodoId}", (int usuarioId, int periodoId, PagamentoMensalDTO dados, HttpRequest request) =>
+{
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    if (!double.IsFinite(dados.TotalEsperado)) return Results.BadRequest("Valor inválido.");
+    using var conn = Database.GetConnection();
+    conn.Open();
+    using var transaction = conn.BeginTransaction();
+    using var validar = conn.CreateCommand();
+    validar.Transaction = transaction;
+    validar.CommandText = "SELECT EXISTS(SELECT 1 FROM Usuarios WHERE Id = @u) AND EXISTS(SELECT 1 FROM Periodos WHERE Id = @p)";
+    validar.Parameters.AddWithValue("@u", usuarioId);
+    validar.Parameters.AddWithValue("@p", periodoId);
+    if (Convert.ToInt32(validar.ExecuteScalar()) == 0) return Results.NotFound("Cliente ou mês não encontrado.");
+    using var consumo = conn.CreateCommand();
+    consumo.Transaction = transaction;
+    consumo.CommandText = @"SELECT COALESCE(SUM(c.Quantidade * p.Preco), 0)
+        FROM Consumo c JOIN Produtos p ON p.Id = c.ProdutoId
+        WHERE c.UsuarioId = @u AND c.PeriodoId = @p";
+    consumo.Parameters.AddWithValue("@u", usuarioId);
+    consumo.Parameters.AddWithValue("@p", periodoId);
+    double total = Math.Round(Convert.ToDouble(consumo.ExecuteScalar()), 2, MidpointRounding.AwayFromZero);
+    if (dados.Pago && total <= 0) return Results.BadRequest("Não há consumo a marcar como pago neste mês.");
+    if (dados.Pago && Math.Abs(total - dados.TotalEsperado) > 0.005)
+        return Results.Conflict("O consumo mudou. Atualize a lista antes de marcar como pago.");
+    using var cmd = conn.CreateCommand();
+    cmd.Transaction = transaction;
+    cmd.CommandText = @"INSERT INTO PagamentosMensais
+        (UsuarioId, PeriodoId, MarcadoPago, ValorPago, AtualizadoEm, AdminId)
+        VALUES (@u, @p, @pago, @valor, @data, @admin)
+        ON CONFLICT(UsuarioId, PeriodoId) DO UPDATE SET
+            MarcadoPago = excluded.MarcadoPago,
+            ValorPago = CASE WHEN excluded.MarcadoPago = 1 THEN MAX(PagamentosMensais.ValorPago * PagamentosMensais.MarcadoPago, excluded.ValorPago) ELSE PagamentosMensais.ValorPago END,
+            AtualizadoEm = excluded.AtualizadoEm,
+            AdminId = excluded.AdminId";
+    cmd.Parameters.AddWithValue("@u", usuarioId);
+    cmd.Parameters.AddWithValue("@p", periodoId);
+    cmd.Parameters.AddWithValue("@pago", dados.Pago ? 1 : 0);
+    cmd.Parameters.AddWithValue("@valor", dados.Pago ? total : 0);
+    cmd.Parameters.AddWithValue("@data", DateTime.UtcNow.ToString("O"));
+    cmd.Parameters.AddWithValue("@admin", GetUserId(request)!.Value);
+    cmd.ExecuteNonQuery();
+    transaction.Commit();
+    return Results.Ok();
+});
+
 app.MapGet("/admin/clientes-saldos/{periodoId}", (int periodoId, HttpRequest request) =>
 {
     if (!IsAdmin(request))
@@ -934,13 +1024,15 @@ app.MapGet("/admin/clientes-saldos/{periodoId}", (int periodoId, HttpRequest req
             u.Id,
             u.Nome,
             u.Posto,
-            COALESCE(SUM(c.Quantidade * p.Preco), 0) AS Total
+            COALESCE(SUM(c.Quantidade * p.Preco), 0) AS Total,
+            COALESCE(pg.MarcadoPago, 0), COALESCE(pg.ValorPago, 0)
         FROM Usuarios u
         LEFT JOIN Consumo c
             ON c.UsuarioId = u.Id
             AND c.PeriodoId = @periodo
         LEFT JOIN Produtos p
             ON p.Id = c.ProdutoId
+        LEFT JOIN PagamentosMensais pg ON pg.UsuarioId = u.Id AND pg.PeriodoId = @periodo
         GROUP BY u.Id, u.Nome, u.Posto
         ORDER BY u.Nome COLLATE NOCASE";
 
@@ -951,12 +1043,15 @@ app.MapGet("/admin/clientes-saldos/{periodoId}", (int periodoId, HttpRequest req
 
     while (reader.Read())
     {
+        var pagamento = ResumoPagamento.Calcular(reader.GetDouble(3), reader.GetInt32(4) == 1 ? reader.GetDouble(5) : 0, reader.GetInt32(4) == 1);
         lista.Add(new
         {
             id = reader.GetInt32(0),
             nome = reader.GetString(1),
             posto = reader.IsDBNull(2) ? "" : reader.GetString(2),
-            total = reader.IsDBNull(3) ? 0 : reader.GetDouble(3)
+            total = reader.IsDBNull(3) ? 0 : reader.GetDouble(3),
+            valorPago = pagamento.ValorPago, saldo = pagamento.Saldo,
+            pago = pagamento.Pago, marcadoPago = pagamento.MarcadoPago
         });
     }
 
@@ -1018,10 +1113,13 @@ app.MapGet("/admin/historico/{id}/{periodoId}", (int id, int periodoId, HttpRequ
         });
     }
 
+    reader.Close();
+    var pagamento = ObterPagamento(conn, id, periodoId, total);
     return Results.Ok(new
     {
-        itens = lista,
-        total
+        itens = lista, total,
+        valorPago = pagamento.ValorPago, saldo = pagamento.Saldo,
+        pago = pagamento.Pago, marcadoPago = pagamento.MarcadoPago
     });
 });
 
@@ -1078,9 +1176,11 @@ app.MapGet("/admin/dashboard/{periodoId}", (int periodoId, HttpRequest request) 
     var cmd = conn.CreateCommand();
 
     cmd.CommandText = @"
-        SELECT COUNT(DISTINCT UsuarioId)
-        FROM Consumo
-        WHERE PeriodoId = @periodo";
+        SELECT COUNT(*) FROM (
+            SELECT c.UsuarioId FROM Consumo c JOIN Produtos p ON p.Id = c.ProdutoId
+            WHERE c.PeriodoId = @periodo GROUP BY c.UsuarioId
+            HAVING ROUND(SUM(c.Quantidade * p.Preco) - COALESCE((SELECT pg.ValorPago FROM PagamentosMensais pg WHERE pg.UsuarioId = c.UsuarioId AND pg.PeriodoId = @periodo AND pg.MarcadoPago = 1), 0), 2) > 0
+        )";
 
     cmd.Parameters.AddWithValue("@periodo", periodoId);
 
@@ -1125,7 +1225,7 @@ app.MapPost("/admin/cobrar-clientes/{periodoId}", async (int periodoId, HttpRequ
             u.Nome,
             u.Posto,
             u.Telefone,
-            SUM(c.Quantidade * p.Preco) AS Total
+            MAX(0, ROUND(SUM(c.Quantidade * p.Preco) - COALESCE((SELECT pg.ValorPago FROM PagamentosMensais pg WHERE pg.UsuarioId = u.Id AND pg.PeriodoId = @periodo AND pg.MarcadoPago = 1), 0), 2)) AS Total
         FROM Consumo c
         JOIN Usuarios u ON c.UsuarioId = u.Id
         JOIN Produtos p ON c.ProdutoId = p.Id
@@ -1192,7 +1292,7 @@ app.MapGet("/admin/clientes-devendo/{periodoId}", (int periodoId, HttpRequest re
             u.Nome,
             u.Posto,
             u.Telefone,
-            SUM(c.Quantidade * p.Preco) AS Total
+            MAX(0, ROUND(SUM(c.Quantidade * p.Preco) - COALESCE((SELECT pg.ValorPago FROM PagamentosMensais pg WHERE pg.UsuarioId = u.Id AND pg.PeriodoId = @periodo AND pg.MarcadoPago = 1), 0), 2)) AS Total
         FROM Consumo c
         JOIN Usuarios u ON c.UsuarioId = u.Id
         JOIN Produtos p ON c.ProdutoId = p.Id
@@ -1235,7 +1335,7 @@ app.MapPost("/admin/cobrar-cliente", async (CobrarClienteDTO dto, HttpRequest re
             u.Nome,
             u.Posto,
             u.Telefone,
-            SUM(c.Quantidade * p.Preco) AS Total
+            MAX(0, ROUND(SUM(c.Quantidade * p.Preco) - COALESCE((SELECT pg.ValorPago FROM PagamentosMensais pg WHERE pg.UsuarioId = u.Id AND pg.PeriodoId = @periodo AND pg.MarcadoPago = 1), 0), 2)) AS Total
         FROM Consumo c
         JOIN Usuarios u ON c.UsuarioId = u.Id
         JOIN Produtos p ON c.ProdutoId = p.Id
@@ -1255,6 +1355,7 @@ app.MapPost("/admin/cobrar-cliente", async (CobrarClienteDTO dto, HttpRequest re
     string posto = reader.IsDBNull(1) ? "" : reader.GetString(1);
     string telefone = "55" + reader.GetString(2);
     double total = reader.GetDouble(3);
+    if (total <= 0) return Results.BadRequest("Cliente sem saldo pendente neste mês.");
 
     string mensagem =
         $"Bom dia {posto} {nome}!\n" +
@@ -1409,7 +1510,7 @@ app.MapPost("/admin/estoque/adicionar", async (HttpRequest request) =>
     conn.Open();
 
     var produtoCmd = conn.CreateCommand();
-    produtoCmd.CommandText = "SELECT COUNT(*) FROM Produtos WHERE Id = @id";
+    produtoCmd.CommandText = "SELECT COUNT(*) FROM Produtos WHERE Id = @id AND Excluido = 0";
     produtoCmd.Parameters.AddWithValue("@id", dto.ProdutoId);
 
     if (Convert.ToInt32(produtoCmd.ExecuteScalar()) == 0)
@@ -1612,6 +1713,13 @@ app.MapPost("/admin/adicionar", async (HttpRequest request) =>
 
     // receber dados
     var dto = await request.ReadFromJsonAsync<CompraAdminDTO>();
+    if (dto == null) return Results.BadRequest("Compra inválida.");
+    using var produtoAtivo = conn.CreateCommand();
+    produtoAtivo.CommandText = "SELECT COUNT(*) FROM Produtos WHERE Id = @id AND Excluido = 0";
+    produtoAtivo.Parameters.AddWithValue("@id", dto.ProdutoId);
+    if (Convert.ToInt32(produtoAtivo.ExecuteScalar()) == 0)
+        return Results.BadRequest("Produto indisponível. Atualize o catálogo.");
+
 
     var cmd = conn.CreateCommand();
 
@@ -1685,3 +1793,13 @@ app.Run();
 
 record CobrarClienteDTO(int UsuarioId, int PeriodoId);
 record AtualizarUsuarioDTO(string Nome,string Posto,string Telefone);
+
+record PagamentoMensalDTO(bool Pago, double TotalEsperado);
+record ResumoPagamento(double ValorPago, double Saldo, bool Pago, bool MarcadoPago)
+{
+    public static ResumoPagamento Calcular(double total, double valorPago, bool marcadoPago)
+    {
+        double saldo = Math.Max(0, Math.Round(total - valorPago, 2, MidpointRounding.AwayFromZero));
+        return new ResumoPagamento(valorPago, saldo, marcadoPago && saldo == 0, marcadoPago);
+    }
+}

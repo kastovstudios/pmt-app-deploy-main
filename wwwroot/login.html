@@ -1,34 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <link rel="stylesheet" href="style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
+<link rel="stylesheet" href="interface.css">
+<script src="interface.js" defer></script>
+<title>Entrar</title>
 </head>
 
-<body>
+<body class="ui-page ui-auth" data-page="login">
 
 <div class="container">
-    <div id="loginNormal">
-        <h2>PMT  -  Login</h2>
+    <form data-action="login" id="loginNormal">
+        <p class="ui-eyebrow">Bem-vindo</p>
+<h2>PMT  -  Login</h2>
 
-        <input id="telefone" placeholder="Telefone">
-        <input id="senha" type="password" placeholder="Senha">
+        <input id="telefone" placeholder="Telefone" required type="tel" inputmode="tel" autocomplete="username">
+        <input id="senha" type="password" placeholder="Senha" required autocomplete="current-password">
 
-        <button onclick="login()">Entrar</button>
+        <button type="submit">Entrar</button>
 
         <p>Não tem conta? <a href="register.html">Cadastrar</a></p>
-    </div>
+    </form>
 
-    <div id="trocaSenhaObrigatoria" style="display:none;">
+    <form data-action="salvarNovaSenha" id="trocaSenhaObrigatoria" style="display:none;">
         <h2>Crie uma nova senha</h2>
         <p>Sua senha foi resetada pelo administrador. Para continuar, cadastre uma nova senha.</p>
 
-        <input id="novaSenha" type="password" placeholder="Nova senha">
-        <input id="confirmarNovaSenha" type="password" placeholder="Confirmar nova senha">
+        <input id="novaSenha" type="password" placeholder="Nova senha" required autocomplete="new-password">
+        <input id="confirmarNovaSenha" type="password" placeholder="Confirmar nova senha" required autocomplete="new-password">
 
-        <button onclick="salvarNovaSenha()">Salvar nova senha</button>
-    </div>
+        <button type="submit">Salvar nova senha</button>
+    </form>
 </div>
 
 <script>

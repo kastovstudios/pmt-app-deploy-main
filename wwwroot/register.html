@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="interface.css">
+<script src="interface.js" defer></script>
+<title>Criar conta</title>
 </head>
 
 <script>
@@ -47,11 +50,13 @@ verificarLogado();
 
 </script>
 
-<body>
+<body class="ui-page ui-auth" data-page="register">
 
-<div class="container">
+<form class="container" data-action="registrar">
 
-    <h2>Cadastro</h2>
+    <p class="ui-eyebrow">Sua conta</p>
+<h2>Cadastro</h2>
+<p class="ui-description">Preencha seus dados para começar.</p>
 
     <select id="posto">
         <option value="Sd Ev">Sd Ev</option>
@@ -71,24 +76,25 @@ verificarLogado();
         <option value="Cel">Cel</option>
     </select>
 
-    <input id="nome" placeholder="Nome de guerra">
+    <input id="nome" placeholder="Nome de guerra" required autocomplete="nickname">
 
     <input
         id="telefone"
         placeholder="Telefone (Whatsapp)"
-    >
+     required type="tel" inputmode="tel" autocomplete="username">
 
     <input
         id="senha"
         type="password"
         placeholder="Senha"
-    >
+     required autocomplete="new-password">
 
-    <button onclick="registrar()">
+    <button type="submit">
         Cadastrar
     </button>
 
-</div>
+<p>Já tem conta? <a href="login.html">Entrar</a></p>
+</form>
 
 <script>
 

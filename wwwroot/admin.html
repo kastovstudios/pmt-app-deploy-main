@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="admin.css">
 <title>Admin</title>
+<link rel="stylesheet" href="interface.css">
+<script src="interface.js" defer></script>
 </head>
 
-<body>
+<body class="ui-page ui-admin" data-page="admin">
 
 <div class="container">
 
-    <div class="sidebar">
+    <nav class="sidebar">
         <h3>Admin</h3>
 
         <button onclick="mostrar('dashboard')">Dashboard</button>
@@ -21,7 +23,7 @@
         <button onclick="mostrar('relatorios')">Relatórios</button>
         <button onclick="mostrar('configuracoes')">Configurações</button>
         <button onclick="home()">Home</button>
-    </div>
+    </nav>
 
     <div class="content">
 
@@ -48,7 +50,7 @@
         <div id="clientes" style="display:none;">
             <h2>Clientes</h2>
 
-            <select id="periodoHistoricoAdmin" onchange="carregarGridClientes()"></select>
+            <select id="periodoHistoricoAdmin" onchange="carregarGridClientes(); if(clienteHistoricoSelecionado) carregarHistorico()"></select>
 
             <select id="filtroPostoHistorico" onchange="filtrarClientesHistorico(); carregarGridClientes()">
                 <option value="">Todos</option>
@@ -279,6 +281,23 @@
         Enviando mensagens...
     </div>
 </div>
+
+
+<dialog id="editorProduto" aria-labelledby="tituloEditorProduto">
+    <form id="formEditarProduto" onsubmit="salvarEdicaoProduto(event)">
+        <h2 id="tituloEditorProduto">Editar produto</h2>
+        <label for="editarProdutoNome">Nome</label>
+        <input id="editarProdutoNome" required autofocus>
+        <label for="editarProdutoPreco">Preço (R$)</label>
+        <input id="editarProdutoPreco" type="text" inputmode="decimal" required placeholder="0,00">
+        <p id="erroEditorProduto" role="alert"></p>
+        <div class="editor-produto-acoes">
+            <button type="submit">Salvar</button>
+            <button type="button" onclick="fecharEditorProduto()">Cancelar</button>
+            <button type="button" class="excluir-produto" onclick="excluirProduto()">Excluir produto</button>
+        </div>
+    </form>
+</dialog>
 
 <script>
 const API = window.location.origin;
@@ -525,6 +544,7 @@ async function carregarGridClientes(){
     }
 
     const clientes = await res.json();
+    if(periodoId !== document.getElementById("periodoHistoricoAdmin").value) return;
     const postoSelecionado = document.getElementById("filtroPostoHistorico").value;
 
     const clientesFiltrados = clientes.filter(c => {
@@ -541,7 +561,7 @@ async function carregarGridClientes(){
                 const nomeB = `${b.posto || ""} ${b.nome || ""}`.trim();
                 comparacao = nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
             }else if(ordenacaoGridClientes.campo === 'divida'){
-                comparacao = Number(a.total || 0) - Number(b.total || 0);
+                comparacao = Number(a.saldo || 0) - Number(b.saldo || 0);
             }
 
             return ordenacaoGridClientes.direcao === 'asc' ? comparacao : -comparacao;
@@ -562,7 +582,7 @@ async function carregarGridClientes(){
         let telefone = String(cliente?.telefone || "").replace(/\D/g, "");
         if(telefone.length === 10 || telefone.length === 11) telefone = "55" + telefone;
         const telefoneValido = /^55\d{10,11}$/.test(telefone);
-        const valor = Number(c.total).toFixed(2).replace('.', ',');
+        const valor = Number(c.saldo).toFixed(2).replace('.', ',');
         const periodo = document.getElementById("periodoHistoricoAdmin").selectedOptions[0].textContent;
         const mensagem = `Bom dia ${nomeCompleto}!\n` +
             `Segue o valor do que consumiu no PMT no período ${periodo}.\n` +
@@ -582,22 +602,67 @@ async function carregarGridClientes(){
         cobrar.type = "button";
         cobrar.className = "btn-cobrar-whatsapp";
         cobrar.textContent = "Cobrar";
-        cobrar.disabled = !telefoneValido || Number(c.total) <= 0;
+        cobrar.disabled = !telefoneValido || Number(c.saldo) <= 0;
         cobrar.title = !telefoneValido ? "Cliente sem telefone válido" :
-            Number(c.total) <= 0 ? "Cliente sem dívida neste período" : `Cobrar ${nomeCompleto} pelo WhatsApp`;
+            Number(c.saldo) <= 0 ? "Cliente sem dívida neste período" : `Cobrar ${nomeCompleto} pelo WhatsApp`;
         cobrar.setAttribute("aria-label", cobrar.title);
         cobrar.addEventListener("click", event => {
             event.stopPropagation();
             window.open(`https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`, "_blank", "noopener,noreferrer");
         });
-        identificacao.append(nome, cobrar);
+        const pago = document.createElement("button");
+        pago.type = "button";
+        pago.className = "btn-pagamento";
+        pago.textContent = c.pago ? "Desfazer pago" : "Marcar pago";
+        pago.disabled = !c.pago && Number(c.saldo) <= 0;
+        pago.addEventListener("click", event => {
+            event.stopPropagation();
+            marcarPagamentoCliente(c, periodoId, !c.pago, pago);
+        });
+        identificacao.append(nome, cobrar, pago);
+        if(c.marcadoPago && !c.pago){
+            const desfazer = document.createElement("button");
+            desfazer.type = "button";
+            desfazer.textContent = "Desfazer pago";
+            desfazer.className = "btn-pagamento";
+            desfazer.addEventListener("click", event => {
+                event.stopPropagation();
+                marcarPagamentoCliente(c, periodoId, false, desfazer);
+            });
+            identificacao.append(desfazer);
+        }
 
         const divida = document.createElement("span");
         divida.className = "grid-cliente-valor";
-        divida.textContent = `R$ ${valor}`;
+        divida.textContent = resumoPagamentoTexto(c);
+        if(c.pago) divida.classList.add("status-pago");
         linha.append(identificacao, divida);
         lista.append(linha);
     });
+}
+
+
+function resumoPagamentoTexto(data){
+    const valor = Number(data.pago ? data.total : data.saldo).toFixed(2).replace('.', ',');
+    return `R$ ${valor}${data.pago ? ' - Pago' : ''}`;
+}
+
+async function marcarPagamentoCliente(cliente, periodoId, pago, botao){
+    const mes = document.getElementById("periodoHistoricoAdmin").selectedOptions[0].textContent.trim();
+    const acao = pago ? "Marcar como pago" : "Desfazer a marcação de pago";
+    if(!confirm(`${acao} para ${cliente.nome} em ${mes}? Os consumos serão mantidos.`)) return;
+    botao.disabled = true;
+    try{
+        const res = await fetch(`${API}/admin/pagamento/${cliente.id}/${periodoId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: localStorage.getItem("token") },
+            body: JSON.stringify({ pago, totalEsperado: Number(Number(cliente.total).toFixed(2)) })
+        });
+        if(!res.ok) throw new Error(await res.text() || "Não foi possível atualizar o pagamento.");
+        await carregarGridClientes();
+        if(clienteHistoricoSelecionado) await carregarHistorico();
+    }catch(error){ alert(error.message || "Erro ao atualizar pagamento."); }
+    finally{ botao.disabled = false; }
 }
 
 function ordenarGridClientes(campo, event){
@@ -689,7 +754,7 @@ function selecionarClienteHistorico(id, nome){
 async function carregarHistorico(){
     const token = localStorage.getItem("token");
 
-    userId = clienteHistoricoSelecionado;
+    const userId = clienteHistoricoSelecionado;
 
     if(!userId){
         alert("Selecione um cliente");
@@ -707,7 +772,9 @@ async function carregarHistorico(){
         headers: { Authorization: token }
     });
 
+    if(!res.ok){ alert("Erro ao carregar histórico"); return; }
     const data = await res.json();
+    if(String(periodoId) !== document.getElementById("periodoHistoricoAdmin").value || userId !== clienteHistoricoSelecionado) return;
     const lista = document.getElementById("historico");
 
     lista.innerHTML = "";
@@ -733,7 +800,9 @@ async function carregarHistorico(){
     
     });
     document.getElementById("totalClienteAdmin").innerText =
-    "TOTAL: R$ " + data.total.toFixed(2);
+    resumoPagamentoTexto(data);
+    document.getElementById("totalClienteAdmin").classList.toggle("status-pago", Boolean(data.pago));
+    document.getElementById("btnCobrarCliente").disabled = Number(data.saldo) <= 0;
 }
 
 async function remover(id){
@@ -771,57 +840,95 @@ async function zerar(){
     carregarHistorico();
 }
 
+let produtoEmEdicao = null;
+let editorProdutoOcupado = false;
+
 async function carregarProdutos(){
     const res = await fetch(`${API}/produtos`);
+    if(!res.ok) throw new Error("Não foi possível carregar os produtos.");
     const data = await res.json();
-
     const lista = document.getElementById("listaProdutos");
-    lista.innerHTML = "";
-
+    lista.replaceChildren();
     data.forEach(p => {
-        lista.innerHTML += `
-            <div class="grid-row">
-                <span>${p.nome}</span>
-                <span>R$ ${Number(p.preco).toFixed(2).replace('.', ',')}</span>
-                <span><button class="btn-editar-preco" onclick="alterarPrecoProduto(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${p.preco})">Alterar preço</button></span>
-            </div>
-        `;
+        const linha = document.createElement("div");
+        linha.className = "grid-row";
+        const nome = document.createElement("span");
+        nome.textContent = p.nome;
+        const preco = document.createElement("span");
+        preco.textContent = "R$ " + Number(p.preco).toFixed(2).replace('.', ',');
+        const acao = document.createElement("span");
+        const editar = document.createElement("button");
+        editar.type = "button";
+        editar.className = "btn-editar-preco";
+        editar.textContent = "Editar";
+        editar.setAttribute("aria-label", "Editar " + p.nome);
+        editar.addEventListener("click", () => abrirEditorProduto(p));
+        acao.append(editar);
+        linha.append(nome, preco, acao);
+        lista.append(linha);
     });
 }
 
+function abrirEditorProduto(produto){
+    produtoEmEdicao = produto;
+    document.getElementById("editarProdutoNome").value = produto.nome;
+    document.getElementById("editarProdutoPreco").value = Number(produto.preco).toFixed(2).replace('.', ',');
+    document.getElementById("erroEditorProduto").textContent = "";
+    document.getElementById("editorProduto").showModal();
+}
 
-async function alterarPrecoProduto(id, nome, precoAtual){
-    const token = localStorage.getItem("token");
+function fecharEditorProduto(){
+    if(editorProdutoOcupado) return;
+    document.getElementById("editorProduto").close();
+    produtoEmEdicao = null;
+}
 
-    const atual = Number(precoAtual).toFixed(2).replace('.', ',');
-    const valorInformado = prompt(`Novo preço para ${nome}:`, atual);
+document.getElementById("editorProduto").addEventListener("cancel", event => {
+    if(editorProdutoOcupado) event.preventDefault();
+});
 
-    if(valorInformado === null) return;
-
-    const novoPreco = parseFloat(valorInformado.replace(',', '.'));
-
-    if(!Number.isFinite(novoPreco) || novoPreco < 0){
-        alert("Informe um preço válido.");
+async function salvarEdicaoProduto(event){
+    event.preventDefault();
+    if(editorProdutoOcupado || !produtoEmEdicao) return;
+    const nome = document.getElementById("editarProdutoNome").value.trim();
+    const textoPreco = document.getElementById("editarProdutoPreco").value.trim().replace(',', '.');
+    const preco = Number(textoPreco);
+    if(!nome || !/^\d+(?:\.\d{1,2})?$/.test(textoPreco) || !Number.isFinite(preco)){
+        document.getElementById("erroEditorProduto").textContent = "Informe o nome e um preço válido, com até duas casas decimais.";
         return;
     }
+    await enviarEdicaoProduto("PUT", { nome, preco });
+}
 
-    const res = await fetch(`${API}/admin/produto/${id}/preco`, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: token
-        },
-        body: JSON.stringify({ preco: novoPreco })
-    });
+async function excluirProduto(){
+    if(editorProdutoOcupado || !produtoEmEdicao) return;
+    if(!confirm(`Excluir "${produtoEmEdicao.nome}" do catálogo? Os consumos já registrados serão mantidos.`)) return;
+    await enviarEdicaoProduto("DELETE");
+}
 
-    if(!res.ok){
-        const erro = await res.text();
-        alert(erro || "Não foi possível alterar o preço.");
-        return;
+async function enviarEdicaoProduto(method, dados){
+    editorProdutoOcupado = true;
+    const controles = document.querySelectorAll("#formEditarProduto input, #formEditarProduto button");
+    controles.forEach(controle => controle.disabled = true);
+    const erro = document.getElementById("erroEditorProduto");
+    erro.textContent = "";
+    try{
+        const res = await fetch(`${API}/admin/produto/${produtoEmEdicao.id}`, {
+            method,
+            headers: { "Content-Type": "application/json", Authorization: localStorage.getItem("token") },
+            ...(dados ? { body: JSON.stringify(dados) } : {})
+        });
+        if(!res.ok) throw new Error(await res.text() || "Não foi possível salvar a alteração.");
+        document.getElementById("editorProduto").close();
+        produtoEmEdicao = null;
+        try{ await carregarProdutos(); }
+        catch{ alert("Alteração salva. Reabra a aba Produtos para atualizar a lista."); }
+    }catch(error){
+        erro.textContent = error.message || "Erro de conexão. Tente novamente.";
+    }finally{
+        editorProdutoOcupado = false;
+        controles.forEach(controle => controle.disabled = false);
     }
-
-    alert(`Preço de ${nome} alterado com sucesso.`);
-    carregarProdutos();
 }
 
 async function addProduto(){
