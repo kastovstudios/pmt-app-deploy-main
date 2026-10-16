@@ -991,6 +991,7 @@ app.MapPut("/admin/pagamento/{usuarioId}/{periodoId}", (int usuarioId, int perio
         return Results.Conflict("O consumo mudou. Atualize a lista antes de marcar como pago.");
     using var cmd = conn.CreateCommand();
     cmd.Transaction = transaction;
+    double totalItens = ComprasDiarias.SincronizarMes(conn, transaction, usuarioId, periodoId, dados.Pago);
     cmd.CommandText = @"INSERT INTO PagamentosMensais
         (UsuarioId, PeriodoId, MarcadoPago, ValorPago, AtualizadoEm, AdminId)
         VALUES (@u, @p, @pago, @valor, @data, @admin)
@@ -1002,7 +1003,7 @@ app.MapPut("/admin/pagamento/{usuarioId}/{periodoId}", (int usuarioId, int perio
     cmd.Parameters.AddWithValue("@u", usuarioId);
     cmd.Parameters.AddWithValue("@p", periodoId);
     cmd.Parameters.AddWithValue("@pago", dados.Pago ? 1 : 0);
-    cmd.Parameters.AddWithValue("@valor", dados.Pago ? total : 0);
+    cmd.Parameters.AddWithValue("@valor", dados.Pago ? Math.Max(total, totalItens) : 0);
     cmd.Parameters.AddWithValue("@data", DateTime.UtcNow.ToString("O"));
     cmd.Parameters.AddWithValue("@admin", GetUserId(request)!.Value);
     cmd.ExecuteNonQuery();
@@ -1126,43 +1127,22 @@ app.MapGet("/admin/historico/{id}/{periodoId}", (int id, int periodoId, HttpRequ
 app.MapDelete("/admin/remover/{id}", (int id, HttpRequest request) =>
 {
     if (!IsAdmin(request)) return Results.Unauthorized();
-
-    using var conn = Database.GetConnection();
-    conn.Open();
-
-    var cmd = conn.CreateCommand();
-    cmd.CommandText = "DELETE FROM Consumo WHERE Id = @id";
-    cmd.Parameters.AddWithValue("@id", id);
-
-    cmd.ExecuteNonQuery();
-
-    return Results.Ok();
+    using var conn = Database.GetConnection(); conn.Open();
+    using var tx = conn.BeginTransaction();
+    var itens = ComprasDiarias.Ler(conn, tx, "c.Id = @id", ("@id", id));
+    if (itens.Count == 0) return Results.NotFound("Consumo não encontrado.");
+    ComprasDiarias.Remover(conn, tx, itens, GetUserId(request)!.Value);
+    tx.Commit(); return Results.Ok();
 });
 
-app.MapDelete("/admin/zerar/{userId}/{periodoId}",
-(int userId, int periodoId, HttpRequest request) =>
+app.MapDelete("/admin/zerar/{userId}/{periodoId}", (int userId, int periodoId, HttpRequest request) =>
 {
-    if (!IsAdmin(request))
-        return Results.Unauthorized();
-
-    using var conn = Database.GetConnection();
-    conn.Open();
-
-    var cmd = conn.CreateCommand();
-
-    cmd.CommandText = @"
-        DELETE FROM Consumo
-        WHERE UsuarioId = @u
-        AND PeriodoId = @p";
-
-    cmd.Parameters.AddWithValue("@u", userId);
-    cmd.Parameters.AddWithValue("@p", periodoId);
-
-    int linhas = cmd.ExecuteNonQuery();
-
-    return Results.Ok(
-        $"Registros removidos: {linhas}"
-    );
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    using var conn = Database.GetConnection(); conn.Open();
+    using var tx = conn.BeginTransaction();
+    var itens = ComprasDiarias.Ler(conn, tx, "c.UsuarioId = @u AND c.PeriodoId = @p", ("@u", userId), ("@p", periodoId));
+    ComprasDiarias.Remover(conn, tx, itens, GetUserId(request)!.Value);
+    tx.Commit(); return Results.Ok($"Registros removidos: {itens.Count}");
 });
 
 app.MapGet("/admin/dashboard/{periodoId}", (int periodoId, HttpRequest request) =>
@@ -1788,6 +1768,55 @@ async Task<bool> EnviarWhatsApp(string numero, string mensagem)
 
     return response.IsSuccessStatusCode;
 }
+
+
+app.MapGet("/admin/compras-diarias", (string? dia, HttpRequest request) =>
+{
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    var hoje = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time"));
+    dia ??= hoje.ToString("yyyy-MM-dd");
+    if (!DateOnly.TryParseExact(dia, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var data) || data == DateOnly.MaxValue)
+        return Results.BadRequest("Dia inválido.");
+    using var conn = Database.GetConnection(); conn.Open();
+    var itens = ComprasDiarias.Ler(conn, null, "c.DataHora >= @inicio AND c.DataHora < @fim",
+        ("@inicio", data.ToString("yyyy-MM-dd")), ("@fim", data.AddDays(1).ToString("yyyy-MM-dd")));
+    var compras = itens.GroupBy(i => new { Tipo = i.CompraId.HasValue ? "compra" : "consumo", Id = i.CompraId ?? i.Id, i.UsuarioId, i.PeriodoId })
+        .Select(g => new {
+            tipo = g.Key.Tipo, id = g.Key.Id, usuarioId = g.Key.UsuarioId, periodoId = g.Key.PeriodoId,
+            nome = g.First().Nome, posto = g.First().Posto, data = g.First().Data,
+            total = Math.Round(g.Sum(i => i.Total), 2), valorPago = Math.Round(g.Sum(i => i.Pago), 2),
+            pago = g.All(i => i.Pago >= i.Total) && g.Any(i => i.Pago > 0),
+            itens = g.Select(i => new { produto = i.Produto, quantidade = i.Quantidade, total = i.Total })
+        }).OrderByDescending(c => c.data).ThenByDescending(c => c.id).ToList();
+    return Results.Ok(new { dia, compras });
+});
+
+app.MapPut("/admin/compras-diarias/{tipo}/{id:long}/pagamento", (string tipo, long id, PagamentoMensalDTO dados, HttpRequest request) =>
+{
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    if (tipo != "compra" && tipo != "consumo") return Results.BadRequest("Tipo inválido.");
+    if (!double.IsFinite(dados.TotalEsperado)) return Results.BadRequest("Valor inválido.");
+    using var conn = Database.GetConnection(); conn.Open();
+    using var tx = conn.BeginTransaction();
+    var itens = ComprasDiarias.Ler(conn, tx, tipo == "compra" ? "c.CompraId = @id" : "c.Id = @id AND c.CompraId IS NULL", ("@id", id));
+    if (itens.Count == 0) return Results.NotFound("Compra não encontrada. Atualize a lista.");
+    if (dados.Pago && Math.Abs(Math.Round(itens.Sum(i => i.Total), 2) - dados.TotalEsperado) > 0.005)
+        return Results.Conflict("A compra mudou. Atualize a lista antes de marcar como paga.");
+    ComprasDiarias.Pagar(conn, tx, itens, dados.Pago, GetUserId(request)!.Value);
+    tx.Commit(); return Results.Ok();
+});
+
+app.MapDelete("/admin/compras-diarias/{tipo}/{id:long}", (string tipo, long id, HttpRequest request) =>
+{
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    if (tipo != "compra" && tipo != "consumo") return Results.BadRequest("Tipo inválido.");
+    using var conn = Database.GetConnection(); conn.Open();
+    using var tx = conn.BeginTransaction();
+    var itens = ComprasDiarias.Ler(conn, tx, tipo == "compra" ? "c.CompraId = @id" : "c.Id = @id AND c.CompraId IS NULL", ("@id", id));
+    if (itens.Count == 0) return Results.NotFound("Compra não encontrada.");
+    ComprasDiarias.Remover(conn, tx, itens, GetUserId(request)!.Value);
+    tx.Commit(); return Results.Ok();
+});
 
 app.Run();
 

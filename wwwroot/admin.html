@@ -7,6 +7,8 @@
 <title>Admin</title>
 <link rel="stylesheet" href="interface.css">
 <script src="interface.js" defer></script>
+<script src="compras-diarias.js" defer></script>
+<link rel="stylesheet" href="compras-diarias.css">
 </head>
 
 <body class="ui-page ui-admin" data-page="admin">
@@ -18,6 +20,7 @@
 
         <button onclick="mostrar('dashboard')">Dashboard</button>
         <button onclick="mostrar('clientes')">Clientes</button>
+        <button onclick="mostrar('comprasDiarias')">Compras diárias</button>
         <button onclick="mostrar('produtos')">Produtos</button>
         <button onclick="mostrar('adicionar')">Adicionar Compra</button>
         <button onclick="mostrar('relatorios')">Relatórios</button>
@@ -46,6 +49,20 @@
             <button onclick="cobrarClientes()">Cobrar Clientes</button>
             <button onclick="baixarMensagensCobranca()">Baixar Mensagens TXT</button>
         </div>
+
+        <section id="comprasDiarias" style="display:none;" aria-labelledby="tituloComprasDiarias">
+            <h2 id="tituloComprasDiarias">Compras diárias</h2>
+            <p class="ui-description">Consulte as compras de cada dia e controle seus pagamentos individualmente.</p>
+            <div class="diario-filtros">
+                <div><label for="mesComprasDiarias">Mês</label><input type="month" id="mesComprasDiarias"></div>
+                <div><label for="diaComprasDiarias">Dia</label><select id="diaComprasDiarias"></select></div>
+                <button type="button" id="hojeComprasDiarias">Hoje</button>
+                <button type="button" id="atualizarComprasDiarias">Atualizar</button>
+            </div>
+            <p id="resumoComprasDiarias" role="status" aria-live="polite"></p>
+            <p id="erroComprasDiarias" role="alert" hidden></p>
+            <div id="listaComprasDiarias"></div>
+        </section>
 
         <div id="clientes" style="display:none;">
             <h2>Clientes</h2>
@@ -391,6 +408,7 @@ async function carregarPeriodos(){
 function mostrar(tela){
     const telas = [
         "dashboard",
+        "comprasDiarias",
         "clientes",
         "produtos",
         "adicionar",
@@ -410,6 +428,7 @@ function mostrar(tela){
 
     if(tela === "dashboard") carregarDashboard();
     if(tela === "clientes") carregarClientes();
+    if(tela === "comprasDiarias") iniciarComprasDiarias();
     if(tela === "produtos") carregarProdutos();
     if(tela === "adicionar"){
         carregarClientesCompra();

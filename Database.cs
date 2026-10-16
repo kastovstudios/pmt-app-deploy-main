@@ -124,5 +124,6 @@ public static class Database
                 PRIMARY KEY (UsuarioId, PeriodoId)
             )";
         pagamentos.ExecuteNonQuery();
+        ComprasDiarias.Inicializar(conn);
     }
 }
