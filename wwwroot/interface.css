@@ -130,3 +130,29 @@ body.ui-page { font-family: "Segoe UI", Arial, sans-serif; margin: 0; height: au
 
 .ui-page:not(.ui-admin) > .container::before { max-width: 100%; }
 @media (max-width: 360px) { .ui-page .grid { grid-template-columns: 1fr; } }
+
+/* Botão de menu exclusivo do admin; mantém o tema e o fundo de cada projeto. */
+.ui-admin .ui-admin-toolbar {
+  position: sticky; top: 0; z-index: 100; min-height: 64px;
+  display: flex; align-items: center; padding: 8px 18px;
+  border-bottom: 1px solid #ffffff20;
+}
+.ui-admin .ui-menu-toggle {
+  display: inline-flex; align-items: center; gap: 12px; min-height: 44px;
+  padding: 8px 12px; margin: 0; width: auto; color: inherit;
+  background: transparent; border: 1px solid currentColor; cursor: pointer;
+}
+.ui-menu-icon { display: flex; flex-direction: column; justify-content: space-between; width: 24px; height: 18px; }
+.ui-menu-icon > span { display: block; width: 100%; height: 3px; border-radius: 2px; background: currentColor; }
+.ui-admin.ui-menu-ready > .container { min-height: calc(100dvh - 64px); }
+.ui-admin.ui-menu-ready .sidebar { top: 64px; height: calc(100dvh - 64px); }
+.ui-admin.ui-menu-ready .sidebar[hidden] { display: none !important; }
+.ui-admin.ui-menu-collapsed .content { width: 100%; }
+@media (max-width: 800px) {
+  .ui-admin .ui-admin-toolbar { padding: 8px 16px; }
+  .ui-admin.ui-menu-ready .sidebar { top: auto; height: auto; }
+}
+@media print {
+  .ui-admin .ui-admin-toolbar { display: none; }
+  .ui-admin.ui-menu-ready .content { width: 100%; }
+}

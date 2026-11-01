@@ -64,7 +64,11 @@ async function init() {
 }
 }
 
-function logout() {
+async function logout() {
+    try {
+        const resposta = await fetch("/logout", {method:"POST", headers:{Authorization:localStorage.getItem("token") || ""}});
+        if (!resposta.ok) throw new Error();
+    } catch { alert("Não foi possível encerrar a sessão. Tente novamente."); return; }
     localStorage.removeItem("token");
     window.location.href = "login.html";
 }

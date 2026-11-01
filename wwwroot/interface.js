@@ -55,6 +55,44 @@
     });
 
     if (page === 'admin') {
+        const sidebar = document.querySelector('.sidebar');
+        const mobileMenu = window.matchMedia('(max-width: 800px)');
+        const toolbar = document.createElement('header');
+        toolbar.className = 'ui-admin-toolbar';
+        toolbar.style.backgroundColor = getComputedStyle(sidebar).backgroundColor;
+        const menuToggle = document.createElement('button');
+        menuToggle.type = 'button'; menuToggle.className = 'ui-menu-toggle';
+        sidebar.id = 'menuAdministrativo';
+        menuToggle.setAttribute('aria-controls', sidebar.id);
+        const icon = document.createElement('span');
+        icon.className = 'ui-menu-icon'; icon.setAttribute('aria-hidden', 'true');
+        for (let i = 0; i < 3; i++) icon.append(document.createElement('span'));
+        const menuLabel = document.createElement('span'); menuLabel.textContent = 'Menu';
+        menuToggle.append(icon, menuLabel); toolbar.append(menuToggle);
+        document.querySelector('.container').before(toolbar);
+        document.body.classList.add('ui-menu-ready');
+        const menuState = { mobile: false, desktop: true };
+        const setMenu = open => {
+            menuState[mobileMenu.matches ? 'mobile' : 'desktop'] = open;
+            if (!open && sidebar.contains(document.activeElement)) menuToggle.focus();
+            sidebar.hidden = !open;
+            document.body.classList.toggle('ui-menu-collapsed', !open);
+            menuToggle.setAttribute('aria-expanded', String(open));
+            menuToggle.setAttribute('aria-label', open ? 'Recolher menu administrativo' : 'Abrir menu administrativo');
+            menuToggle.title = open ? 'Recolher menu' : 'Abrir menu';
+        };
+        menuToggle.addEventListener('click', () => setMenu(sidebar.hidden));
+        sidebar.addEventListener('click', event => {
+            if (mobileMenu.matches && event.target.closest('button')) setMenu(false);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !sidebar.hidden &&
+                (sidebar.contains(document.activeElement) || document.activeElement === menuToggle)) {
+                setMenu(false); menuToggle.focus();
+            }
+        });
+        mobileMenu.addEventListener('change', () => setMenu(menuState[mobileMenu.matches ? 'mobile' : 'desktop']));
+        setMenu(menuState[mobileMenu.matches ? 'mobile' : 'desktop']);
         const dashboard = document.getElementById('dashboard');
         const cards = [...dashboard.querySelectorAll(':scope > .card')];
         const metrics = document.createElement('div'); metrics.className = 'ui-metrics';

@@ -125,5 +125,6 @@ public static class Database
             )";
         pagamentos.ExecuteNonQuery();
         ComprasDiarias.Inicializar(conn);
+        Auditoria.Inicializar(conn);
     }
 }

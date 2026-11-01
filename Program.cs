@@ -30,6 +30,8 @@ app.UseStaticFiles();
 app.UseCors();
 
 Database.Inicializar();
+Auditoria.Instalar(app);
+Auditoria.Mapear(app);
 
 void GarantirPeriodoAtual()
 {
@@ -197,7 +199,7 @@ app.MapPost("/register", (RegisterDTO dto) =>
     }
 });
 
-app.MapPost("/login", (LoginDTO dto) =>
+app.MapPost("/login", (LoginDTO dto, HttpContext context) =>
 {
     using var conn = Database.GetConnection();
     conn.Open();
@@ -255,6 +257,8 @@ app.MapPost("/login", (LoginDTO dto) =>
         id);
 
     update.ExecuteNonQuery();
+    var adminLogin = Auditoria.Identificar(conn, token);
+    if (adminLogin != null) context.Items["AdminLogin"] = adminLogin;
 
     return Results.Ok(new
     {
@@ -448,8 +452,9 @@ app.MapPut("/admin/produto/{id}/preco", async (int id, HttpRequest request) =>
 //  COMPRAS
 // =======================
 
-app.MapGet("/setup/admin/{telefone}", (string telefone) =>
+app.MapGet("/setup/admin/{telefone}", (string telefone, HttpRequest request) =>
 {
+    if (!IsAdmin(request)) return Results.Unauthorized();
     using var conn = Database.GetConnection();
     conn.Open();
 
@@ -1474,6 +1479,23 @@ app.MapGet("/admin/estoque/{produtoId}", (int produtoId, HttpRequest request) =>
     int quantidade = obj == null ? 0 : Convert.ToInt32(obj);
 
     return Results.Ok(new { quantidade });
+});
+
+app.MapPost("/admin/estoque/{produtoId}/zerar", (int produtoId, HttpRequest request) =>
+{
+    if (!IsAdmin(request)) return Results.Unauthorized();
+    if (produtoId <= 0) return Results.BadRequest("Selecione um produto válido.");
+    using var conn = Database.GetConnection();
+    conn.Open();
+    using var cmd = conn.CreateCommand();
+    // Uma única operação: altera apenas o saldo do produto ativo selecionado.
+    cmd.CommandText = @"
+        INSERT INTO Estoque (ProdutoId, Quantidade)
+        SELECT Id, 0 FROM Produtos WHERE Id = @id AND Excluido = 0
+        ON CONFLICT(ProdutoId) DO UPDATE SET Quantidade = 0";
+    cmd.Parameters.AddWithValue("@id", produtoId);
+    if (cmd.ExecuteNonQuery() == 0) return Results.NotFound("Produto não encontrado.");
+    return Results.Ok(new { quantidade = 0 });
 });
 
 app.MapPost("/admin/estoque/adicionar", async (HttpRequest request) =>

@@ -9,6 +9,8 @@
 <script src="interface.js" defer></script>
 <script src="compras-diarias.js" defer></script>
 <link rel="stylesheet" href="compras-diarias.css">
+<script src="atividades.js" defer></script>
+<link rel="stylesheet" href="atividades.css">
 </head>
 
 <body class="ui-page ui-admin" data-page="admin">
@@ -21,6 +23,7 @@
         <button onclick="mostrar('dashboard')">Dashboard</button>
         <button onclick="mostrar('clientes')">Clientes</button>
         <button onclick="mostrar('comprasDiarias')">Compras diárias</button>
+        <button onclick="mostrar('atividades')">Atividades / Logs</button>
         <button onclick="mostrar('produtos')">Produtos</button>
         <button onclick="mostrar('adicionar')">Adicionar Compra</button>
         <button onclick="mostrar('relatorios')">Relatórios</button>
@@ -49,6 +52,20 @@
             <button onclick="cobrarClientes()">Cobrar Clientes</button>
             <button onclick="baixarMensagensCobranca()">Baixar Mensagens TXT</button>
         </div>
+
+        <section id="atividades" style="display:none" aria-labelledby="tituloAtividades">
+            <h2 id="tituloAtividades">Atividades / Logs</h2>
+            <p class="ui-description">Ações dos administradores registradas a partir desta atualização. Horários de Brasília.</p>
+            <div class="atividades-filtros">
+                <label for="diaAtividades">Dia <input type="date" id="diaAtividades"></label>
+                <button type="button" id="hojeAtividades">Hoje</button>
+                <button type="button" id="atualizarAtividades">Atualizar</button>
+            </div>
+            <p id="statusAtividades" role="status" aria-live="polite"></p>
+            <p id="erroAtividades" role="alert" hidden></p>
+            <div id="listaAtividades"></div>
+            <button type="button" id="maisAtividades" hidden>Carregar mais</button>
+        </section>
 
         <section id="comprasDiarias" style="display:none;" aria-labelledby="tituloComprasDiarias">
             <h2 id="tituloComprasDiarias">Compras diárias</h2>
@@ -201,6 +218,7 @@
             <div class="estoque-controle">
                 <input id="qtdAdicionarEstoque" type="number" min="1" step="1" placeholder="Quantidade para adicionar ao estoque">
                 <button onclick="adicionarEstoque()">Adicionar ao estoque</button>
+                <button type="button" id="btnZerarEstoque" onclick="zerarEstoque()">Zerar estoque</button>
             </div>
 
             <div class="card">
@@ -409,6 +427,7 @@ function mostrar(tela){
     const telas = [
         "dashboard",
         "comprasDiarias",
+        "atividades",
         "clientes",
         "produtos",
         "adicionar",
@@ -429,6 +448,7 @@ function mostrar(tela){
     if(tela === "dashboard") carregarDashboard();
     if(tela === "clientes") carregarClientes();
     if(tela === "comprasDiarias") iniciarComprasDiarias();
+    if(tela === "atividades") iniciarAtividades();
     if(tela === "produtos") carregarProdutos();
     if(tela === "adicionar"){
         carregarClientesCompra();
@@ -628,6 +648,9 @@ async function carregarGridClientes(){
         cobrar.addEventListener("click", event => {
             event.stopPropagation();
             window.open(`https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`, "_blank", "noopener,noreferrer");
+            fetch("/admin/atividades/whatsapp", {method:"POST", headers:{"Content-Type":"application/json", Authorization:token}, body:JSON.stringify({usuarioId:c.id, periodoId:Number(periodoId)})})
+                .then(r => { if (!r.ok) throw new Error(); })
+                .catch(() => alert("O WhatsApp foi aberto, mas não foi possível registrar essa abertura nas atividades."));
         });
         const pago = document.createElement("button");
         pago.type = "button";
@@ -1162,6 +1185,43 @@ async function carregarRelatorioProduto(){
     document.getElementById("qtdVendidaProduto").innerText = data.quantidade;
     document.getElementById("totalVendidoProduto").innerText = "R$ " + data.total.toFixed(2);
     document.getElementById("qtdEstoqueProduto").innerText = estoque.quantidade;
+}
+
+async function zerarEstoque(){
+    const select = document.getElementById("produtoRelatorio");
+    const produtoId = Number(select.value);
+    const botao = document.getElementById("btnZerarEstoque");
+    if(botao.disabled) return;
+    if(!Number.isInteger(produtoId) || produtoId <= 0){
+        alert("Selecione um produto.");
+        return;
+    }
+    const nome = select.selectedOptions[0].textContent.trim();
+    if(!confirm(`Zerar o estoque de "${nome}"? O saldo atual será substituído por 0. As compras e dívidas serão mantidas.`)) return;
+    const controles = [...document.querySelectorAll(".estoque-controle button, .estoque-controle input"), select];
+    const estados = controles.map(controle => controle.disabled);
+    controles.forEach(controle => controle.disabled = true);
+    botao.textContent = "Zerando…";
+    try {
+        const res = await fetch(`${API}/admin/estoque/${produtoId}/zerar`, {
+            method: "POST",
+            headers: { Authorization: localStorage.getItem("token") || "" }
+        });
+        if(!res.ok){
+            alert(await res.text() || "Não foi possível zerar o estoque.");
+            return;
+        }
+        const data = await res.json();
+        if(Number(select.value) === produtoId){
+            document.getElementById("qtdEstoqueProduto").innerText = data.quantidade;
+            document.getElementById("qtdAdicionarEstoque").value = "";
+        }
+    } catch {
+        alert("Não foi possível confirmar a atualização. Atualize o relatório para conferir o estoque antes de tentar novamente.");
+    } finally {
+        controles.forEach((controle, i) => controle.disabled = estados[i]);
+        botao.textContent = "Zerar estoque";
+    }
 }
 
 async function adicionarEstoque(){
