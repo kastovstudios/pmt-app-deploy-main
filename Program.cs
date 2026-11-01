@@ -876,8 +876,8 @@ app.MapGet("/admin/mensagens-cobranca/{periodoId}",
             $"Bom dia {nomeCompleto}!\n" +
             $"Segue o valor do que consumiu no PMT durante o mês de {nomePeriodo}.\n" +
             $"Valor: R$ {total:F2}.\n\n" +
-            $"Pix: 12996518343\n\n" +
-            $"*NUBANK (Daniel Fonseca de Araújo)*\n\n" +
+            $"Pix: df.araujo2001@hotmail.com\n\n" +
+            $"*Banco do Brasil (Daniel Fonseca de Araújo)*\n\n" +
             $"FAVOR ENVIAR O COMPROVANTE APÓS O PAGAMENTO\n";
 
         texto.AppendLine("----------------------------------------");
@@ -1241,8 +1241,8 @@ app.MapPost("/admin/cobrar-clientes/{periodoId}", async (int periodoId, HttpRequ
             $"Bom dia {cliente.Posto} {cliente.Nome}!\n" +
             $"Segue o valor do que consumiu no PMT durante o mês anterior\n" +
             $"Valor: R$ {cliente.Total:F2}.\n\n" +
-            $"Pix: 12996518343\n\n" +
-            $"*NUBANK (Daniel Fonseca de Araújo*\n\n"+
+            $"Pix: df.araujo2001@hotmail.com\n\n" +
+            $"*Banco do Brasil (Daniel Fonseca de Araújo*\n\n"+
             $"FAVOR ENVIAR O COMPROVANTE APÓS O PAGAMENTO\n";
 
         bool enviado = await EnviarWhatsApp(cliente.Telefone, mensagem);
@@ -1341,8 +1341,8 @@ app.MapPost("/admin/cobrar-cliente", async (CobrarClienteDTO dto, HttpRequest re
         $"Bom dia {posto} {nome}!\n" +
         $"Segue o valor do que consumiu no PMT durante o mês anterior\n" +
         $"Valor: R$ {total:F2}.\n\n" +
-        $"Pix: 12996518343\n\n" +
-        $"*NUBANK (Daniel Fonseca de Araújo)*\n\n" +
+        $"Pix: df.araujo2001@hotmail.com\n\n" +
+        $"*Banco do Brasil (Daniel Fonseca de Araújo)*\n\n" +
         $"FAVOR ENVIAR O COMPROVANTE APÓS O PAGAMENTO\n";
 
     bool enviado = await EnviarWhatsApp(telefone, mensagem);
